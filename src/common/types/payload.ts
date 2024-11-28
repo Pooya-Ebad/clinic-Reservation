@@ -1,6 +1,5 @@
 export type TokenPayload = {
-    first_name : string,
-    last_name : string,
+    type : string,
     mobile : string,
     id : number
 } 

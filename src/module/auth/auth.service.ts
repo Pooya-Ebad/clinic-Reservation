@@ -52,10 +52,12 @@ export class AuthService {
                 mobile : phoneNumber,
             })
             user = await this.userRepository.save(user)
+            await this.createOtp(user)
+        }else if(user?.mobile_verify === false){
+            await this.createOtp(user)
         }else{
             throw new ConflictException("user already exist")
         }
-        await this.createOtp(user)
         return {
             message : "code sent"
         }
@@ -64,7 +66,8 @@ export class AuthService {
         const {mobile} = OtpDto
         const { phoneNumber} = mobileValidation(mobile)
         let user = await this.userRepository.findOneBy({mobile : phoneNumber})
-        if(!user){
+        let doctor = await this.docRepository.findOneBy({mobile : phoneNumber})
+        if(!user && !doctor){
             throw new UnauthorizedException("user not found")
         }
         await this.createOtp(user)
@@ -81,6 +84,7 @@ export class AuthService {
                 otp : true
             }
         })
+        const doctor = await this.docRepository.findOneBy({mobile : phoneNumber})
         const now = new Date()
         if(user?.otp?.expires_in < now){
             throw new UnauthorizedException("code is expired")
@@ -97,7 +101,7 @@ export class AuthService {
             })
         }
         const { accessToken , refreshToken } = this.TokenGenerator({
-            id : user.id , first_name : user.first_name, last_name : user.last_name, mobile : user.mobile
+            id : doctor?.id || user?.id , type : doctor?.role || user?.role , mobile : doctor?.mobile || user?.mobile
         })
         return {
             accessToken,
@@ -122,9 +126,15 @@ export class AuthService {
     async validateAccessToken(token : string){
         try {
             const payload = this.jwtService.verify<TokenPayload>(token,{secret : process.env.ACCESS_TOKEN_SECRET}) 
+            let user : UserEntity;
+            let doctor : DoctorEntity;
             if(typeof payload == "object" && payload?.id){
-                const user = await this.userRepository.findOneBy({id : payload.id})
-                if(!user){
+                if(payload.type === "doctor"){
+                    doctor = await this.docRepository.findOneBy({mobile : payload.mobile})
+                }else{
+                    user = await this.userRepository.findOneBy({id : payload.id})
+                }
+                if(!user && !doctor){
                     throw new UnauthorizedException("login to your account")
                 }
                 return payload
@@ -164,8 +174,8 @@ export class AuthService {
         try {
             const verify = this.jwtService.verify<TokenPayload>(RefreshToken , {secret : process.env.REFRESH_TOKEN_SECRET})
             if(verify.mobile) {
-                const { last_name, first_name, id, mobile } = verify
-                return this.TokenGenerator({first_name, last_name, id, mobile})
+                const { type, id, mobile } = verify
+                return this.TokenGenerator({type, id, mobile})
             }
             throw new UnauthorizedException("please login your account")
         } catch (error) {

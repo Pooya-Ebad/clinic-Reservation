@@ -46,7 +46,8 @@ export class CategoryController {
         validators : [
           new MaxFileSizeValidator({maxSize : toMG(10)}),
           new FileTypeValidator({fileType : "image/(png|jpg|jpeg)"})
-        ]
+        ],
+        fileIsRequired : false
       })
     ) image : Express.Multer.File,
     @Param('id') id: string,
@@ -60,3 +61,5 @@ export class CategoryController {
     return this.categoryService.remove(+id);
   }
 }
+
+

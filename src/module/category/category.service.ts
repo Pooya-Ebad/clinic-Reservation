@@ -58,22 +58,30 @@ export class CategoryService {
     return category
   }
 
-  async update(id: number, updateCategoryDto: UpdateCategoryDto, image : Express.Multer.File) {
+  async update(id: number, updateCategoryDto: UpdateCategoryDto, image : Express.Multer.File = null) {
     let { description, parentId, show, slug, title } = updateCategoryDto
+    let destination : string;
+    const updateData: any = {};
+
     await this.findById(id)
-    const { Location }= await this.s3service.uploadFile(image, "image")
+    if(image){
+      const { Location }= await this.s3service.uploadFile(image, "image")
+      destination = Location
+    }
     if(isBoolean(show)){
       show = toBoolean(show)
+      updateData.show = show
     }
     if(parentId && !isNaN(parentId)){
       await this.findById(+parentId)
-    }else{parentId = null}
-    await this.categoryRepository.update({id}, {
-      description,
-      parentId,
-      image : Location,
-      slug,
-      title
+      updateData.parentId = parentId
+    }
+    if (description) updateData.description = description;
+    if (destination) updateData.image = destination;
+    if (slug) updateData.slug = slug;
+    if (title) updateData.title = title;
+    await this.categoryRepository.update({id},{
+      ...updateData
     })
     return {message : "category updated"}
   }

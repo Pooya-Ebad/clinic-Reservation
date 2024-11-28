@@ -31,7 +31,7 @@ export class AuthController {
     refreshToken(@Body() refreshTokenDto : RefreshTokenDto) {
         return this.authService.verifyRefreshToken(refreshTokenDto)
     }
-    @Roles("admin")
+    @Roles(["admin"])
     @UseGuards(AuthGuard)
     @Patch("set-admin")
     @ApiConsumes(SwaggerEnums.UrlEncoded)

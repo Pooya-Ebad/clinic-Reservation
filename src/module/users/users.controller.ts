@@ -13,14 +13,14 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   
   @Get()
-  @Roles("admin")
+  @Roles(["admin"])
   @UseGuards(AuthGuard)
   findAll() {
     return this.usersService.findAll();
   }
 
   @ApiConsumes(SwaggerEnums.UrlEncoded)
-  @Roles("admin")
+  @Roles(["admin"])
   @UseGuards(AuthGuard)
   @Get("find-one/:mobile")
   async findOne(@Param("mobile") mobile: string) {
@@ -34,7 +34,7 @@ export class UsersController {
   }
   
   @Delete(':mobile')
-  @Roles("admin")
+  @Roles(["admin"])
   @UseGuards(AuthGuard)
   async remove(@Param('mobile') mobile: string) {
     return await this.usersService.remove(mobile);
