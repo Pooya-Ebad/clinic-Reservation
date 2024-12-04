@@ -35,21 +35,24 @@ export class DoctorsController {
   }
 
   @Get()
-  // @Roles(["admin"])
+  @Roles(["admin"])
   findAll() {
     return this.doctorsService.findAll();
   }
 
   @Get(':medical_license')
+  @Roles(["admin"])
   findByLicense(@Param('medical_license') medical_license: string) {
     return this.doctorsService.findOneByLicense(medical_license);
   }
   @Get(':mobile')
+  @Roles(["admin"])
   findOne(@Param('mobile') mobile: string) {
     return this.doctorsService.findByMobile(mobile);
   }
 
   @Patch(':mobile')
+  @Roles(["admin"])
   @ApiConsumes(SwaggerEnums.Multipart)
   update(
     @UploadedFile(
@@ -67,6 +70,7 @@ export class DoctorsController {
   }
 
   @Delete(':mobile')
+  @Roles(["admin"])
   remove(@Param('mobile') mobile: string) {
     return this.doctorsService.remove(mobile);
   } 

@@ -12,7 +12,7 @@ import { Roles } from "src/common/decorators/roles.decorator";
 export class AuthController {
     constructor(private readonly authService : AuthService) {}
     @ApiConsumes(SwaggerEnums.UrlEncoded)
-    @Post("send-otp")
+    @Post("signup")
     signup(@Body() otpDto : CreateOtpDto) {
         return this.authService.signup(otpDto)
     }
