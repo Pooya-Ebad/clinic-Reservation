@@ -2,13 +2,14 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, Upl
 import { UsersService } from './users.service';
 import { FindUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { SwaggerEnums } from 'src/common/enums/swagger.enum';
 import { AuthGuard } from '../auth/guard/auth.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('users')
 @ApiBearerAuth("Authorization")
+@ApiTags("users")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   

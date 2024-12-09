@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, Upl
 import { DoctorsService } from './doctors.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
-import { ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { UploadFileS3 } from 'src/common/interceptors/upload-file.interceptor';
 import { toMG } from 'src/common/utility/function.utils';
 import { Request, request } from 'express';
@@ -13,6 +13,7 @@ import { SwaggerEnums } from 'src/common/enums/swagger.enum';
 @ApiBearerAuth("Authorization")
 @Controller('doctors')
 @UseGuards(AuthGuard)
+@ApiTags("Doctors")
 export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
 
