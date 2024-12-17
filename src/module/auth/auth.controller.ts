@@ -15,7 +15,7 @@ export class AuthController {
     @ApiConsumes(SwaggerEnums.UrlEncoded)
     @Post("signup")
     signup(@Body() otpDto : CreateOtpDto) {
-        return this.authService.signup(otpDto)
+        return this.authService.signup(otpDto, "user")
     }
     @ApiConsumes(SwaggerEnums.UrlEncoded)
     @Post("login")
@@ -25,18 +25,18 @@ export class AuthController {
     @Post("check-otp")
     @ApiConsumes(SwaggerEnums.UrlEncoded)
     checkOtp(@Body() otpDto : CheckOtpDto) {
-        return this.authService.checkOtp(otpDto)
+        return this.authService.checkOtp(otpDto,"user")
     }
     @Post("refreshToken")
     @ApiConsumes(SwaggerEnums.UrlEncoded)
     refreshToken(@Body() refreshTokenDto : RefreshTokenDto) {
         return this.authService.verifyRefreshToken(refreshTokenDto)
     }
-    @Roles(["admin"])
-    @UseGuards(AuthGuard)
-    @Patch("set-admin")
-    @ApiConsumes(SwaggerEnums.UrlEncoded)
-    setAdmin(@Body() role : RoleDto){
-        return this.authService.setAdmin(role)
-    }
+    // @Roles(["admin"])
+    // @UseGuards(AuthGuard)
+    // @Patch("set-admin")
+    // @ApiConsumes(SwaggerEnums.UrlEncoded)
+    // setAdmin(@Body() role : RoleDto){
+    //     return this.authService.setAdmin(role)
+    // }
 } 
