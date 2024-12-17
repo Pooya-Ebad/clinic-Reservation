@@ -17,7 +17,7 @@ export class AuthGuard implements CanActivate{
         const httpRequest = context.switchToHttp()
         const request : Request = httpRequest.getRequest<Request>()
         const token = this.extractToken(request)
-        request.user = await this.authService.validateAccessToken(token)
+        request.user = await this.authService.validateAccessToken(token)    
         const requiredRole : string[] = this.reflector.get(ROLE_KEY, context.getHandler());
         if(requiredRole && requiredRole.length>0){
             const userRole = await this.authService.checkUserRole(request.user.mobile)
@@ -29,12 +29,12 @@ export class AuthGuard implements CanActivate{
         return true
     }
     protected extractToken(request : Request){
-        const { authorization } = request.headers
+        const { authorization = undefined } = request?.headers ?? {}
         if(!authorization ||  authorization?.trim() == "") 
-            throw new UnauthorizedException("login to your account")
+            throw new UnauthorizedException("login to your account1")
         const [ bearer , token ] = authorization?.split(" ")
         if(bearer.toLowerCase() !== "bearer" || !token || !isJWT(token))
-            throw new UnauthorizedException("login to your account")        
+            throw new UnauthorizedException("login to your account2")        
         return token
     }
 
