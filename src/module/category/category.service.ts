@@ -14,9 +14,13 @@ export class CategoryService {
   ){}
   async create(createCategoryDto: CreateCategoryDto , image : Express.Multer.File) {
     let { description , parentId, show, slug, title }= createCategoryDto
+    let destination : string;
     const category = await this.findBySlug(slug)
     if(category) throw new ConflictException("category already exists")
-    const { Location }= await this.s3service.uploadFile(image, "image")
+    if(image){
+      const { Location }= await this.s3service.uploadFile(image, "image")
+      destination = Location
+    }
     if(isBoolean(show)){
       show = toBoolean(show)
     }
@@ -25,7 +29,7 @@ export class CategoryService {
     }else{parentId = null}
     await this.categoryRepository.insert({
       description,
-      image : Location,
+      image : destination,
       parentId ,
       show,
       slug,

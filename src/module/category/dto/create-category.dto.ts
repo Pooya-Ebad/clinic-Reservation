@@ -5,7 +5,7 @@ export class CreateCategoryDto {
     title : string
     @ApiProperty()
     slug : string
-    @ApiProperty({format : "binary"})
+    @ApiPropertyOptional({format : "binary"})
     image : string
     @ApiPropertyOptional()
     description : string

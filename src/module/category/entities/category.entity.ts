@@ -9,7 +9,7 @@ export class CategoryEntity {
     title : string
     @Column({unique : true})
     slug : string
-    @Column()
+    @Column({nullable : true})
     image : string
     @Column()
     description : string
