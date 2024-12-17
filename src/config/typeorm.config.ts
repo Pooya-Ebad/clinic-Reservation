@@ -1,5 +1,4 @@
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm"
-import { OtpEntity } from "src/module/auth/entity/otp.entity"
 import { CategoryEntity } from "src/module/category/entities/category.entity"
 import { DoctorEntity } from "src/module/doctors/entities/doctor.entity"
 import { UserEntity } from "src/module/users/entities/user.entity"
@@ -14,13 +13,12 @@ export class TypeOrmConfig implements TypeOrmOptionsFactory{
         username : DB_USERNAME,
         password : DB_PASSWORD,
         synchronize : false,
-        // autoLoadEntities : true,
-        // entities: [ 
-        //     "dist/**/**/**/*.entity.{ts,js}",
-        //     "dist/**/**/*.entity.{ts,js}",
-        //   ], 
-        entities : [DoctorEntity, OtpEntity, UserEntity, CategoryEntity],
+        entities: [ 
+            "dist/**/**/**/*.entity.{ts,js}",
+            "dist/**/**/*.entity.{ts,js}",
+          ], 
+        // entities : [DoctorEntity, UserEntity, CategoryEntity],
          
         }  
     }   
-} 
+}    
