@@ -1,12 +1,10 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { CreateDoctorDto } from './dto/create-doctor.dto';
+import { ChangeStatusDto, CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DoctorEntity } from './entities/doctor.entity';
 import { Repository } from 'typeorm';
-import { Request } from 'express';
 import { S3Service } from '../S3/S3.service';
-import { UsersService } from '../users/users.service';
 import { role } from 'src/common/enums/role.enum';
 import { AuthService } from '../auth/auth.service';
 import { CategoryService } from '../category/category.service';
@@ -17,46 +15,44 @@ export class DoctorsService {
   constructor(
     @InjectRepository(DoctorEntity) private doctorRepository : Repository<DoctorEntity>,
     private s3Service : S3Service,
-    private userService : UsersService,
     private authService : AuthService,
     private categoryService : CategoryService,
   ){}
-  async create(createDoctorDto: CreateDoctorDto, image : Express.Multer.File, request : Request) {
-    const { Medical_License_number, category, description, national_code } = createDoctorDto
-    const { mobile } = request.user
-    let doctor = await this.doctorRepository.findOneBy({mobile})
-    if(doctor) throw new ConflictException("doctor already exist")
+  async create(createDoctorDto: CreateDoctorDto, image : Express.Multer.File, mobile : string) {
+    const { Medical_License_number, category, description, national_code, otp_code } = createDoctorDto
+    const { phoneNumber } = mobileValidation(mobile)
+    let accessToken:string;
+    let refreshToken :string;
     await this.categoryService.findById(+category)
-    const user = await this.userService.findOne(mobile)
-    const { Location } = await this.s3Service.uploadFile(image,"Doctors")
-    doctor  = this.doctorRepository.create({
-      category,
-      description,
-      first_name : user.first_name,
-      image : Location,
-      last_name : user.last_name,
-      Medical_License_number, 
-      mobile,
-      mobile_verify : user.mobile_verify,
-      national_code,
-      role : role.DOCTOR
-    })
-    await this.doctorRepository.save(doctor)
-    const { accessToken, refreshToken } = this.authService.TokenGenerator({
-      id : doctor.id, mobile , type : "doctor"
-    })
-    return {accessToken, refreshToken}
+    let doctor = await this.doctorRepository.findOneBy({mobile : phoneNumber})
+    if(doctor){
+      if(doctor.mobile_verify){
+        throw new ConflictException("شما ثبت نام خود را تکمیل کرده اید")
+      }
+      const {accessToken, refreshToken} =  await this.authService.checkOtp({code : otp_code, mobile}, "doctor")
+      accessToken
+      refreshToken
+      const { Location } = await this.s3Service.uploadFile(image,"Doctors")
+      await this.doctorRepository.update({mobile : phoneNumber},{
+         category,
+         description,
+         image : Location,
+         Medical_License_number, 
+         national_code, 
+         role : role.DOCTOR,
+         mobile_verify : true
+       })
+    }else throw new UnauthorizedException("doctor not found")
+    return {
+      accessToken,
+      refreshToken,
+      message : "اکانت شما با موفقیت ساخنه شد و در صف تایید  قرار گرفت"
+      }
 
   }
   
   async findAll() {
     return await this.doctorRepository.find({})
-  }
-
-  async findByMobile(mobile: string) {
-    const doctor = await this.doctorRepository.findOneBy({mobile})
-    if(!doctor) throw new UnauthorizedException("doctor not found")
-    return doctor
   }
   async findOneByLicense(medical_license: string) {
     const doctor = await this.doctorRepository.findOneBy({Medical_License_number : medical_license})
@@ -64,14 +60,13 @@ export class DoctorsService {
     return doctor
   }
 
-  async update(ParamMobile: string, updateDoctorDto: UpdateDoctorDto, image : Express.Multer.File) {
+  async update(medical_license: string, updateDoctorDto: UpdateDoctorDto, image : Express.Multer.File) {
+    console.log("object");
     const {description,first_name,last_name, mobile, national_code} = updateDoctorDto
-    console.log(description, first_name, last_name, mobile, national_code);
-    const { phoneNumber } = mobileValidation(ParamMobile)
     let destination : string;
     const updateData : any = {}
 
-    await this.findByMobile(phoneNumber)
+    await this.findOneByLicense(medical_license)
     if(image){
       const { Location } = await this.s3Service.uploadFile(image, "Doctors")
       destination = Location
@@ -85,15 +80,22 @@ export class DoctorsService {
       const { phoneNumber } = mobileValidation(mobile)
       updateData.description = phoneNumber
     } 
-    const a = await this.doctorRepository.update({mobile : phoneNumber},{
+    await this.doctorRepository.update({Medical_License_number : medical_license},{
       ...updateData
     })
     return {message : "doctor profile updated"} 
   }
 
-  async remove(mobile: string) {
-    await this.findByMobile(mobile)
-    await this.doctorRepository.delete({mobile})
+  async remove(medical_license: string) {
+    await this.findOneByLicense(medical_license)
+    await this.doctorRepository.delete({Medical_License_number : medical_license})
     return {message : "doctor deleted successfully"}
+  }
+  async register(changeStatusDto : ChangeStatusDto){
+    const { Medical_License_number, status } = changeStatusDto
+    let doctor = await this.findOneByLicense(Medical_License_number)
+    doctor.status = status
+    await this.doctorRepository.save(doctor)
+    return {message : `تغیر کرد ${status} وضعیت کاربر به`}
   }
 }

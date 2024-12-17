@@ -1,6 +1,7 @@
 import { EntityName } from "src/common/enums/entities.enum";
-import { OtpEntity } from "src/module/auth/entity/otp.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { role } from "src/common/enums/role.enum";
+import { statusEnum } from "src/common/enums/status.enum";
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity(EntityName.Doc)
 export class DoctorEntity {
@@ -14,20 +15,26 @@ export class DoctorEntity {
     mobile : string
     @Column({default : false})
     mobile_verify : boolean
-    @Column()
+    @Column({nullable : true})
     category : string
-    @Column({unique : true})
+    @Column({unique : true,nullable : true})
     Medical_License_number : string
-    @Column({unique : true})
+    @Column({unique : true,nullable : true})
     national_code : string
-    @Column()
+    @Column({nullable : true})
     description : string
-    @Column({default : "user"})
+    @Column({type : "enum", enum : statusEnum ,default : statusEnum.PENDING})
+    status : string
+    @Column({default : role.USER})
     role : string
     @CreateDateColumn()
     created_at : Date
     @UpdateDateColumn()
     updated_at : Date
-    @Column()
+    @Column({nullable : true})
+    otp : string
+    @Column({nullable : true})
+    expires_in : Date
+    @Column({nullable : true})
     image : string
 }
