@@ -1,6 +1,5 @@
 import { EntityName } from "src/common/enums/entities.enum";
 import { role } from "src/common/enums/role.enum";
-import { OtpEntity } from "src/module/auth/entity/otp.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity(EntityName.User)
@@ -22,8 +21,7 @@ export class UserEntity {
     @UpdateDateColumn()
     updated_at : Date
     @Column({nullable : true})
-    otpId : number
-    @OneToOne(() => OtpEntity, otp => otp.user)
-    @JoinColumn()
-    otp : OtpEntity
+    otp : string
+    @Column({nullable : true})
+    expires_in : Date
 }
