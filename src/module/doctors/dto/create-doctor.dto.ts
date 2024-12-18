@@ -1,9 +1,11 @@
 import { ApiProperty } from "@nestjs/swagger"
 import { IsEnum, isEnum, IsMobilePhone, IsString, Length } from "class-validator"
+import { categoryEnum } from "src/common/enums/category.enum"
 import { statusEnum } from "src/common/enums/status.enum"
 
 export class CreateDoctorDto {
-    @ApiProperty()
+    @ApiProperty({enum : categoryEnum})
+    @IsEnum(categoryEnum)
     @IsString()
     category : string
     @ApiProperty()
@@ -32,5 +34,8 @@ export class ChangeStatusDto {
     @ApiProperty({enum : statusEnum})
     @IsEnum(statusEnum)
     status : string
+    @ApiProperty()
+    @IsString() 
+    description : string
 }
  

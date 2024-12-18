@@ -1,3 +1,4 @@
+import { categoryEnum } from "src/common/enums/category.enum";
 import { EntityName } from "src/common/enums/entities.enum";
 import { role } from "src/common/enums/role.enum";
 import { statusEnum } from "src/common/enums/status.enum";
@@ -15,7 +16,7 @@ export class DoctorEntity {
     mobile : string
     @Column({default : false})
     mobile_verify : boolean
-    @Column({nullable : true})
+    @Column({type : "enum", enum : categoryEnum ,nullable : true})
     category : string
     @Column({unique : true,nullable : true})
     Medical_License_number : string

@@ -1,7 +1,5 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { CreateDoctorDto } from './create-doctor.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsMobilePhone, IsString, Length } from 'class-validator';
-
 export class UpdateDoctorDto{
     @ApiPropertyOptional()
     @IsString()
@@ -14,9 +12,6 @@ export class UpdateDoctorDto{
     mobile : string
     @ApiPropertyOptional({format : "binary"})
     image : string
-    @ApiPropertyOptional()
-    @IsString()
-    description : string
     @ApiPropertyOptional()
     @IsString()
     @Length(10,10, {message : "national code must be between 10 to 10"})
