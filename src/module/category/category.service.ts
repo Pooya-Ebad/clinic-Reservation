@@ -5,7 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { CategoryEntity } from './entities/category.entity';
 import { Repository } from 'typeorm';
 import { S3Service } from '../S3/S3.service';
-import { isBoolean, toBoolean } from 'src/common/utility/function.utils';
+import { categoryJson, isBoolean, toBoolean } from 'src/common/utility/function.utils';
+import { access } from 'fs/promises'
 @Injectable()
 export class CategoryService {
   constructor(
@@ -35,6 +36,7 @@ export class CategoryService {
       slug,
       title
     })
+    categoryJson(slug,title)
     return {message : "category created"}
   }
 
@@ -54,10 +56,17 @@ export class CategoryService {
   }
 
   async findBySlug(slug: string) {
-    return await this.categoryRepository.findOneBy({slug})
+    const category = await this.categoryRepository.findOneBy({slug})
+    if(!category) throw new NotFoundException("category not found")
+    return category
   }
   async findById(id: number) {
     const category = await this.categoryRepository.findOneBy({id})
+    if(!category) throw new NotFoundException("category not found")
+    return category
+  }
+  async findByTitle(title: string) {
+    const category = await this.categoryRepository.findOneBy({title})
     if(!category) throw new NotFoundException("category not found")
     return category
   }
