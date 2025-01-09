@@ -18,7 +18,7 @@ export class AuthService {
     ){}
     private createOtp(){
         let code = randomInt(10000 , 99999).toString()
-        let expiration = new Date(new Date().getTime() + (1000*60 *2) )
+        let expiration = new Date(new Date().getTime() + (1000*60 *10) )
         return {code , expiration}
     }
     async signup(OtpDto : CreateOtpDto, type : string){
@@ -35,6 +35,8 @@ export class AuthService {
                     otp : code,
                     expires_in : expiration
                 })
+            }else if(doc?.expires_in > new Date(new Date().getTime())){
+                throw new NotFoundException("otp code not expired")
             }else if(!doc?.mobile_verify){
                 doc.otp = code
                 doc.expires_in = expiration

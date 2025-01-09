@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UseGuards, UploadedFiles } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -13,6 +13,7 @@ import { role } from 'src/common/enums/role.enum';
 @ApiBearerAuth("Authorization")
 @ApiTags("Category")
 // @UseGuards(AuthGuard)
+
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
   // @ApiCreatedResponse({example : {message : "created"}})
@@ -22,16 +23,16 @@ export class CategoryController {
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(UploadFileS3("image"))
   create(
-    @UploadedFile(
+    @UploadedFiles(
       new ParseFilePipe({
         validators : [
           new MaxFileSizeValidator({maxSize : toMG(10)}),
           new FileTypeValidator({fileType : "image/(png|jpg|jpeg)"}),
         ],
-        fileIsRequired : false
+        fileIsRequired : false,
       })
     
-    ) image : Express.Multer.File,
+    ) image : Express.Multer.File[],
     @Body() createCategoryDto: CreateCategoryDto
   ) {
     return this.categoryService.create(createCategoryDto, image);
@@ -52,7 +53,7 @@ export class CategoryController {
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(UploadFileS3("image"))
   update(
-    @UploadedFile(
+    @UploadedFiles(
       new ParseFilePipe({
         validators : [
           new MaxFileSizeValidator({maxSize : toMG(10)}),
@@ -60,7 +61,7 @@ export class CategoryController {
         ],
         fileIsRequired : false
       })
-    ) image : Express.Multer.File,
+    ) image : Express.Multer.File[],
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto
   ) {

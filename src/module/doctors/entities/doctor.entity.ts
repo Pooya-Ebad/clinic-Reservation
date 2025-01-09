@@ -2,7 +2,8 @@ import { categoryEnum } from "src/common/enums/category.enum";
 import { EntityName } from "src/common/enums/entities.enum";
 import { role } from "src/common/enums/role.enum";
 import { statusEnum } from "src/common/enums/status.enum";
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { ClinicEntity } from "src/module/clinic/entity/clinic.entity";
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity(EntityName.Doc)
 export class DoctorEntity {
@@ -16,7 +17,7 @@ export class DoctorEntity {
     mobile : string
     @Column({default : false})
     mobile_verify : boolean
-    @Column({type : "enum", enum : categoryEnum ,nullable : true})
+    @Column({nullable : true})
     category : string
     @Column({unique : true,nullable : true})
     Medical_License_number : string
@@ -38,4 +39,8 @@ export class DoctorEntity {
     expires_in : Date
     @Column({nullable : true})
     image : string
+    @Column({nullable : true})
+    clinicId : number
+    @ManyToOne(()=> ClinicEntity, (clinic)=>{clinic.doctors},{onDelete : "SET NULL"})
+    clinic : ClinicEntity
 }

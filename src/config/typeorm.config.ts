@@ -13,6 +13,7 @@ export class TypeOrmConfig implements TypeOrmOptionsFactory{
         username : DB_USERNAME,
         password : DB_PASSWORD,
         synchronize : false,
+        // dropSchema : true,
         entities: [ 
             "dist/**/**/**/*.entity.{ts,js}",
             "dist/**/**/*.entity.{ts,js}",

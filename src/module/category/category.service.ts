@@ -13,13 +13,14 @@ export class CategoryService {
     @InjectRepository(CategoryEntity) private categoryRepository : Repository<CategoryEntity>,
     private s3service : S3Service
   ){}
-  async create(createCategoryDto: CreateCategoryDto , image : Express.Multer.File) {
+  async create(createCategoryDto: CreateCategoryDto , image : Express.Multer.File[]) {
     let { description , parentId, show, slug, title }= createCategoryDto
     let destination : string;
-    const category = await this.findBySlug(slug)
+    const category = await this.categoryRepository.findOneBy({slug})
+    
     if(category) throw new ConflictException("category already exists")
     if(image){
-      const { Location }= await this.s3service.uploadFile(image, "image")
+      const { Location } = await this.s3service.uploadFile(image[0],"Doctors")
       destination = Location
     }
     if(isBoolean(show)){
@@ -71,14 +72,14 @@ export class CategoryService {
     return category
   }
 
-  async update(id: number, updateCategoryDto: UpdateCategoryDto, image : Express.Multer.File = null) {
+  async update(id: number, updateCategoryDto: UpdateCategoryDto, image : Express.Multer.File[] = null) {
     let { description, parentId, show, slug, title } = updateCategoryDto
     let destination : string;
     const updateData: any = {};
 
     await this.findById(id)
     if(image){
-      const { Location }= await this.s3service.uploadFile(image, "image")
+      const { Location } = await this.s3service.uploadFile(image[0],"Doctors")
       destination = Location
     }
     if(isBoolean(show)){

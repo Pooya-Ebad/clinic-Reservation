@@ -11,7 +11,7 @@ export class CategoryEntity {
     slug : string
     @Column({nullable : true})
     image : string
-    @Column()
+    @Column({nullable : true})
     description : string
     @Column({default : true})
     show : boolean

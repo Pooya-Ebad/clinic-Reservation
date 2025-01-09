@@ -18,7 +18,7 @@ export class DoctorsService {
     private authService : AuthService,
     private categoryService : CategoryService,
   ){}
-  async create(createDoctorDto: CreateDoctorDto, image : Express.Multer.File, mobile : string) {
+  async create(createDoctorDto: CreateDoctorDto, image : Express.Multer.File[], mobile : string) {
     const { Medical_License_number, category, description, national_code, otp_code } = createDoctorDto
     const { phoneNumber } = mobileValidation(mobile)
     let accessToken:string;
@@ -30,9 +30,8 @@ export class DoctorsService {
         { Medical_License_number } 
         ]
       }),
-      await this.categoryService.findByTitle(category)
+      this.categoryService.findByTitle(category)
     ])
-    console.log(existCheck);
     if(existCheck){
       throw new ConflictException("شما قبلا ثبت نام کرده اید")
     }
@@ -43,10 +42,10 @@ export class DoctorsService {
       const {accessToken, refreshToken} =  await this.authService.checkOtp({code : otp_code, mobile}, "doctor")
       accessToken
       refreshToken
-      const { Location } = await this.s3Service.uploadFile(image,"Doctors")
+      const { Location } = await this.s3Service.uploadFile(image[0],"Doctors")
       await this.doctorRepository.update({mobile : phoneNumber},{
-         category : categoryExist.slug,
-         description,
+        description,
+        category : categoryExist.slug,
          image : Location,
          Medical_License_number, 
          national_code, 
@@ -71,7 +70,7 @@ export class DoctorsService {
     return doctor
   }
 
-  async update(medical_license: string, updateDoctorDto: UpdateDoctorDto, image : Express.Multer.File) {
+  async update(medical_license: string, updateDoctorDto: UpdateDoctorDto, image : Express.Multer.File[]) {
     const { mobile } = updateDoctorDto
     let updateData : any = {}
     await this.findOneByLicense(medical_license)
@@ -81,7 +80,7 @@ export class DoctorsService {
       }
     }
     if(image){
-      const { Location } = await this.s3Service.uploadFile(image, "Doctors")
+      const { Location } = await this.s3Service.uploadFile(image[0], "Doctors")
       updateData.image = Location
     }
     if(mobile){

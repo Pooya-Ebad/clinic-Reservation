@@ -1,12 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFiles } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
 import { ChangeStatusDto, CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { UploadFileS3 } from 'src/common/interceptors/upload-file.interceptor';
 import { toMG } from 'src/common/utility/function.utils';
-import { query, Request, request } from 'express';
-import { AuthGuard } from '../auth/guard/auth.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { SwaggerEnums } from 'src/common/enums/swagger.enum';
 import { CheckOtpDto, CreateOtpDto, SendOtpDto } from '../auth/dto/auth.dto';
@@ -25,6 +23,25 @@ export class DoctorsController {
   signup(@Body() otpDto : CreateOtpDto) {
     return this.authService.signup(otpDto, "doctor")
   }
+  @Post("signup-step2:mobile")
+  @ApiConsumes(SwaggerEnums.Multipart)
+  @UseInterceptors(UploadFileS3("image"))
+  create(
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators : [
+          new MaxFileSizeValidator({maxSize : toMG(10)}),
+          new FileTypeValidator({fileType : "image/(png|jpg|jpeg)"})
+        ],
+        fileIsRequired : false
+      })
+    ) image : Express.Multer.File[],
+    @Body() createDoctorDto: CreateDoctorDto,
+    @Param("mobile") mobile : string
+  ) {
+    console.log(image);
+    return this.doctorsService.create(createDoctorDto, image, mobile);
+  }
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   @Post("login")
   login(@Body() otpDto : SendOtpDto) {
@@ -34,24 +51,6 @@ export class DoctorsController {
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   checkOtp(@Body() otpDto : CheckOtpDto) {
       return this.authService.checkOtp(otpDto,"doctor")
-  }
-  @Post("signup-step2:mobile")
-  @ApiConsumes(SwaggerEnums.Multipart)
-  @UseInterceptors(UploadFileS3("image"))
-  create(
-    @UploadedFile(
-      new ParseFilePipe({
-        validators : [
-          new MaxFileSizeValidator({maxSize : toMG(10)}),
-          new FileTypeValidator({fileType : "image/(png|jpg|jpeg)"})
-        ],
-        fileIsRequired : false
-      })
-    ) image : Express.Multer.File,
-    @Body() createDoctorDto: CreateDoctorDto,
-    @Param("mobile") mobile : string
-  ) {
-    return this.doctorsService.create(createDoctorDto, image, mobile);
   }
 
   @Get()
@@ -70,7 +69,7 @@ export class DoctorsController {
   @ApiConsumes(SwaggerEnums.Multipart)
   @UseInterceptors(UploadFileS3("image"))
   update(
-    @UploadedFile(
+    @UploadedFiles(
       new ParseFilePipe({
         validators : [
           new MaxFileSizeValidator({maxSize : toMG(10)}),
@@ -78,7 +77,7 @@ export class DoctorsController {
         ],
         fileIsRequired : false
       })
-    ) image : Express.Multer.File,
+    ) image : Express.Multer.File[],
     @Body() updateDoctorDto: UpdateDoctorDto,
     @Param('Medical_license') Medical_license : string
     ) {
