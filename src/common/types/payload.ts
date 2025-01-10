@@ -3,3 +3,6 @@ export type TokenPayload = {
     mobile : string,
     id : number
 } 
+export type ClinicPayload = {
+    id : number
+} 

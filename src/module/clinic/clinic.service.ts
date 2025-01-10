@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ClinicEntity } from "./entity/clinic.entity";
 import { Repository } from "typeorm";
@@ -70,7 +70,28 @@ export class clinicService {
     })
     return {message : "اطلاعات شما دریافت شد و در صف تایید قرار گرفتید"}
     }
-    
+    async addDoctor(docLicense : string, clinicId : number){
+        const doc = await this.doctorService.findOneByLicense(docLicense)
+        const clinic = await this.findById(clinicId)
+        if(clinic.status === statusEnum.PENDING || clinic.status === statusEnum.REJECTED){
+            throw new UnauthorizedException("کلینیک شما در حال حاضر امکان فعالبت ندارد.")
+        }
+        if(doc.clinicId !== 0){
+            throw new ConflictException("این پزشک در یک کلینیک عضو میباشد")
+        }else if(doc.category !== clinic.category){
+            throw new ConflictException("حوزه کاری این پزشک در حیطه کاری کلینیک نمیباشد")
+        }else if(!doc.mobile_verify || doc.status === statusEnum.PENDING || doc.status === statusEnum.REJECTED){
+            throw new UnauthorizedException("پزشک معتبر نمیباشد")
+        }
+        doc.clinicId = clinic.id;
+        clinic.doctorsCount += 1;
+        await Promise.all([
+            this.doctorRepository.save(doc),
+            this.clinicRepository.save(clinic)
+        ])
+        return {message : `به پزشکان کلینیک اضافه گردید ${doc.first_name} ${doc.last_name} پزشک`}
+        
+    }
     async checkTelephone(phone: string) {
         if (phone && isPhoneNumber(phone, "IR")) {
             const existPhone = await this.clinicDocumentEntity.findOneBy([

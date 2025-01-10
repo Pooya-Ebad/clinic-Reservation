@@ -13,6 +13,7 @@ import { statusEnum } from "src/common/enums/status.enum";
 import { AuthGuard } from "../auth/guard/auth.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
 import { role } from "src/common/enums/role.enum";
+import { ClinicGuard } from "./guard/clinic.guard";
 
 @ApiBearerAuth('Authorization')
 @UseGuards(AuthGuard)
@@ -61,6 +62,16 @@ export class clinicController {
         @Body() confirmationDto : ClinicConformationDto
     ){
         return this.clinicService.confirmation(id, confirmationDto)
+    }
+    @Put('Add_Doctor:License')
+    @UseGuards(ClinicGuard)
+    @Roles([role.DOCTOR, role.ADMIN])
+    @ApiConsumes(SwaggerEnums.UrlEncoded)
+    AddDoctor(
+        @Param('License') License : string,
+        @Req() request : Request 
+    ){
+        return this.clinicService.addDoctor(License, request.clinic.id)
     }
 }   
 

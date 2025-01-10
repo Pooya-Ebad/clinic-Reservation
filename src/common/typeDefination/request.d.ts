@@ -1,8 +1,9 @@
 import 'express';
-import { TokenPayload } from '../types/payload';
+import { ClinicPayload, TokenPayload } from '../types/payload';
 
 declare module 'express' {
   export interface Request {
-    user?: TokenPayload
+    user?: TokenPayload,
+    clinic?: ClinicPayload
   }
 }
