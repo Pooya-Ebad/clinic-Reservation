@@ -23,8 +23,9 @@ import { CategoryEntity } from '../category/entities/category.entity';
     S3Service,
     UsersService,
     CategoryService
-  ]
-  ,
+  ],
+  exports : [DoctorsService]
+  
 })
 export class DoctorsModule {}
  

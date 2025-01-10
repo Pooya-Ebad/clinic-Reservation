@@ -40,6 +40,8 @@ export class ClinicEntity {
   city: string;
   @Column()
   address: string;
+  @Column({default : 0})
+  doctorsCount: number;
   @Column({nullable: true, unique: true})
   documentsId: number;
   @OneToMany(() => DoctorEntity, (doctor) => doctor.clinic)

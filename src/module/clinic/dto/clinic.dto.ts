@@ -1,12 +1,11 @@
 import {ApiProperty, ApiPropertyOptional} from "@nestjs/swagger";
 import {
   IsEnum,
-  IsMobilePhone,
   IsNotEmpty,
   IsPhoneNumber,
-  Matches,
 } from "class-validator";
 import { categoryEnum } from "src/common/enums/category.enum";
+import { statusEnum } from "src/common/enums/status.enum";
 
 export class CreateClinicDto {
   @ApiProperty()
@@ -38,4 +37,11 @@ export class ClinicDocumentDto {
   @ApiProperty()
   @IsPhoneNumber("IR", {message: "تلفن وارد شده صحیح نمیباشد"})
   tel_2: string;
+}
+export class ClinicConformationDto{
+  @ApiProperty({enum : statusEnum})
+  @IsEnum(statusEnum)
+  status : string
+  @ApiPropertyOptional()
+  message : string
 }

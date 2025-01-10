@@ -64,6 +64,11 @@ export class DoctorsController {
   findByLicense(@Param('medical_license') medical_license: string) {
     return this.doctorsService.findOneByLicense(medical_license);
   }
+  @Get(':mobile')
+  @Roles(["admin"])
+  findByMobile(@Param('mobile') mobile: string) {
+    return this.doctorsService.findOneByMobile(mobile);
+  }
   @Patch('update:Medical_license')
   @Roles(["admin"])
   @ApiConsumes(SwaggerEnums.Multipart)

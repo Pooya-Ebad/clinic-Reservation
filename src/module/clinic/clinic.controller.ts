@@ -1,17 +1,19 @@
-import { Body, Controller,FileTypeValidator,MaxFileSizeValidator,Param,ParseFilePipe,Post, Req, UploadedFiles, UseInterceptors} from "@nestjs/common";
+import { Body, Controller,FileTypeValidator,MaxFileSizeValidator,Param,ParseFilePipe,Post, Put, Req, UploadedFiles, UseInterceptors} from "@nestjs/common";
 import { clinicService } from "./clinic.service";
 
-import { ApiConsumes } from "@nestjs/swagger";
+import { ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
 
-import { ClinicDocumentDto, CreateClinicDto } from "./dto/clinic.dto";
+import { ClinicConformationDto, ClinicDocumentDto, CreateClinicDto } from "./dto/clinic.dto";
 import { Request } from "express";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
 import { toMG } from "src/common/utility/function.utils";
+import { statusEnum } from "src/common/enums/status.enum";
 
 
 @Controller('clinic')
+@ApiTags('Clinic')
 export class clinicController {
     constructor(private readonly clinicService : clinicService){}
 
@@ -42,6 +44,14 @@ export class clinicController {
     @Body() clinicDocumentDto: ClinicDocumentDto
     ) {
     return this.clinicService.CreateDocument(clinicDocumentDto,files,mobile);
+    }
+    @Put('confirmation:id')
+    @ApiConsumes(SwaggerEnums.UrlEncoded)
+    Confirmation(
+        @Param('id') id : string,
+        @Body() confirmationDto : ClinicConformationDto
+    ){
+        return this.clinicService.confirmation(id, confirmationDto)
     }
 }   
 

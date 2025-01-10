@@ -1,9 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ClinicEntity } from "./entity/clinic.entity";
 import { Repository } from "typeorm";
 import { S3Service } from "../S3/S3.service";
-import { ClinicDocumentDto, CreateClinicDto } from "./dto/clinic.dto";
+import { ClinicConformationDto, ClinicDocumentDto, CreateClinicDto } from "./dto/clinic.dto";
 import { CategoryEntity } from "../category/entities/category.entity";
 import { TokenPayload } from "src/common/types/payload";
 import { isPhoneNumber } from "class-validator";
@@ -11,6 +11,8 @@ import { ClinicDocumentEntity } from "./entity/Document.entity";
 import { getCityAndProvinceNameByCode } from "src/common/utility/address.utils";
 import slugify from "slugify";
 import { DoctorEntity } from "../doctors/entities/doctor.entity";
+import { statusEnum } from "src/common/enums/status.enum";
+import { DoctorsService } from "../doctors/doctors.service";
 
 @Injectable()
 export class clinicService {
@@ -19,7 +21,8 @@ export class clinicService {
         @InjectRepository(CategoryEntity) private categoryRepository : Repository<CategoryEntity>,
         @InjectRepository(ClinicDocumentEntity) private clinicDocumentEntity : Repository<ClinicDocumentEntity>,
         @InjectRepository(DoctorEntity) private doctorRepository : Repository<DoctorEntity>,
-        private s3Service : S3Service
+        private s3Service : S3Service,
+        private doctorService : DoctorsService
     ){}
     async create(createClinicDto: CreateClinicDto , user : TokenPayload) {
     let { name,  address, city, province, category }= createClinicDto
@@ -74,6 +77,26 @@ export class clinicService {
             ]);
             if (existPhone) throw new ConflictException("تلفن وارد شده تکراری میباشد");
         }
-      }
-    
+    }
+    async findById(id: number) {
+        const clinic = await this.clinicRepository.findOneBy({id : +id})
+        if(!clinic) throw new NotFoundException("کلینیک یافت نشد")
+        return clinic
+    }
+    async confirmation(id : string ,confirmationDto : ClinicConformationDto){
+        const { status, message } = confirmationDto
+        if(status === statusEnum.REJECTED && !message){
+            throw new BadRequestException("برای رد کردن توضیحات نمیتواند خالی باشد.")
+        }
+        const clinic = await this.findById(+id)
+        const doc = await this.doctorService.findOneByMobile(clinic.manager_mobile)
+        if(status === statusEnum.ACCEPTED){
+            doc.clinicId = clinic.id
+            clinic.doctorsCount +=1
+            await this.doctorRepository.save(doc)
+        }
+        clinic.status = status
+        await this.clinicRepository.save(clinic)    
+        return {message : `تغیر کرد ${status} وضعیت کلینیک به`}
+    }
 }

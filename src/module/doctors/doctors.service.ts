@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ChangeStatusDto, CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -67,6 +67,11 @@ export class DoctorsService {
   async findOneByLicense(medical_license: string) {
     const doctor = await this.doctorRepository.findOneBy({Medical_License_number : medical_license})
     if(!doctor) throw new UnauthorizedException("doctor not found")
+    return doctor
+  }
+  async findOneByMobile(mobile: string) {
+    const doctor = await this.doctorRepository.findOneBy({mobile})
+    if(!doctor) throw new NotFoundException("پزشک یافت نشد")
     return doctor
   }
 
