@@ -1,7 +1,7 @@
-import { Body, Controller,FileTypeValidator,MaxFileSizeValidator,Param,ParseFilePipe,Post, Put, Req, UploadedFiles, UseInterceptors} from "@nestjs/common";
+import { Body, Controller,FileTypeValidator,Get,MaxFileSizeValidator,Param,ParseFilePipe,Post, Put, Req, UploadedFiles, UseGuards, UseInterceptors} from "@nestjs/common";
 import { clinicService } from "./clinic.service";
 
-import { ApiConsumes, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
 
 import { ClinicConformationDto, ClinicDocumentDto, CreateClinicDto } from "./dto/clinic.dto";
@@ -10,15 +10,24 @@ import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
 import { toMG } from "src/common/utility/function.utils";
 import { statusEnum } from "src/common/enums/status.enum";
+import { AuthGuard } from "../auth/guard/auth.guard";
+import { Roles } from "src/common/decorators/roles.decorator";
+import { role } from "src/common/enums/role.enum";
 
-
+@ApiBearerAuth('Authorization')
+@UseGuards(AuthGuard)
 @Controller('clinic')
 @ApiTags('Clinic')
 export class clinicController {
     constructor(private readonly clinicService : clinicService){}
 
+    @Roles([role.DOCTOR])
+    @Get(':id')
+    getClinics(@Param('id') id : string){
+        return this.clinicService.findById(+id)
+    }
     @Post('register_step1')
-    @ApiConsumes(SwaggerEnums.Multipart)
+    @ApiConsumes(SwaggerEnums.UrlEncoded)
     Register(
     @Body() createClinicDto: CreateClinicDto,
     @Req() request : Request

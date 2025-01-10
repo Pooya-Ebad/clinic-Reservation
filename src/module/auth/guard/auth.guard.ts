@@ -20,7 +20,7 @@ export class AuthGuard implements CanActivate{
         request.user = await this.authService.validateAccessToken(token)    
         const requiredRole : string[] = this.reflector.get(ROLE_KEY, context.getHandler());
         if(requiredRole && requiredRole.length>0){
-            const userRole = await this.authService.checkUserRole(request.user.mobile)
+            const userRole = await this.authService.checkUserRole(request.user.mobile, request.user.type)
             if(requiredRole.includes(userRole.toString())){
                     return true
             }

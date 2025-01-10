@@ -21,8 +21,8 @@ export class DoctorsService {
   async create(createDoctorDto: CreateDoctorDto, image : Express.Multer.File[], mobile : string) {
     const { Medical_License_number, category, description, national_code, otp_code } = createDoctorDto
     const { phoneNumber } = mobileValidation(mobile)
-    let accessToken:string;
-    let refreshToken :string;
+    let accessTokenValue:string;
+    let refreshTokenValue :string;
     const [doctor, existCheck, categoryExist]= await Promise.all([
       this.doctorRepository.findOneBy({mobile : phoneNumber}),
       this.doctorRepository.exists({ where : [
@@ -33,15 +33,15 @@ export class DoctorsService {
       this.categoryService.findByTitle(category)
     ])
     if(existCheck){
-      throw new ConflictException("شما قبلا ثبت نام کرده اید")
+      throw new ConflictException("این کدملی یا کد نظام پزشکی قبلا ثبت شده است")
     }
     if(doctor){
       if(doctor.mobile_verify){
         throw new ConflictException("شما ثبت نام خود را تکمیل کرده اید")
       }
       const {accessToken, refreshToken} =  await this.authService.checkOtp({code : otp_code, mobile}, "doctor")
-      accessToken
-      refreshToken
+      accessTokenValue = accessToken
+      refreshTokenValue = refreshToken
       const { Location } = await this.s3Service.uploadFile(image[0],"Doctors")
       await this.doctorRepository.update({mobile : phoneNumber},{
         description,
@@ -52,10 +52,10 @@ export class DoctorsService {
          role : role.DOCTOR,
          mobile_verify : true
        })
-    }else throw new UnauthorizedException("doctor not found")
+    }else throw new UnauthorizedException("پزشک یافت نشد")
     return {
-      accessToken,
-      refreshToken,
+      accessTokenValue,
+      refreshTokenValue,
       message : "اکانت شما با موفقیت ساخنه شد و در صف تایید  قرار گرفت"
       }
 
@@ -65,12 +65,18 @@ export class DoctorsService {
     return await this.doctorRepository.find({})
   }
   async findOneByLicense(medical_license: string) {
-    const doctor = await this.doctorRepository.findOneBy({Medical_License_number : medical_license})
+    const doctor = await this.doctorRepository.findOne({
+      where : {Medical_License_number : medical_license},
+      relations : {clinic : true}
+    })
     if(!doctor) throw new UnauthorizedException("doctor not found")
     return doctor
   }
   async findOneByMobile(mobile: string) {
-    const doctor = await this.doctorRepository.findOneBy({mobile})
+    const doctor = await this.doctorRepository.findOne({
+      where : { mobile },
+      relations : {clinic : true}
+    })
     if(!doctor) throw new NotFoundException("پزشک یافت نشد")
     return doctor
   }

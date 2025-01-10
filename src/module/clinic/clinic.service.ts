@@ -27,6 +27,7 @@ export class clinicService {
     async create(createClinicDto: CreateClinicDto , user : TokenPayload) {
     let { name,  address, city, province, category }= createClinicDto
     const {provinceName, cityName} = getCityAndProvinceNameByCode(province,city)
+    console.log(province);
     const categoryExists = await this.categoryRepository.findOneBy({title : category})
     if(!categoryExists) throw new NotFoundException("category not found")
     const doc = await this.doctorRepository.findOneBy({id : user.id})
@@ -69,6 +70,7 @@ export class clinicService {
     })
     return {message : "اطلاعات شما دریافت شد و در صف تایید قرار گرفتید"}
     }
+    
     async checkTelephone(phone: string) {
         if (phone && isPhoneNumber(phone, "IR")) {
             const existPhone = await this.clinicDocumentEntity.findOneBy([
@@ -79,7 +81,12 @@ export class clinicService {
         }
     }
     async findById(id: number) {
-        const clinic = await this.clinicRepository.findOneBy({id : +id})
+        const clinic = await this.clinicRepository.findOne({
+            where : {
+                id,
+            },
+            relations : {doctors : true}
+        })
         if(!clinic) throw new NotFoundException("کلینیک یافت نشد")
         return clinic
     }
@@ -99,4 +106,5 @@ export class clinicService {
         await this.clinicRepository.save(clinic)    
         return {message : `تغیر کرد ${status} وضعیت کلینیک به`}
     }
+
 }

@@ -39,7 +39,6 @@ export class DoctorsController {
     @Body() createDoctorDto: CreateDoctorDto,
     @Param("mobile") mobile : string
   ) {
-    console.log(image);
     return this.doctorsService.create(createDoctorDto, image, mobile);
   }
   @ApiConsumes(SwaggerEnums.UrlEncoded)
@@ -59,12 +58,12 @@ export class DoctorsController {
     return this.doctorsService.findAll();
   }
 
-  @Get(':medical_license')
+  @Get('findByLicense:medical_license')
   @Roles(["admin"])
   findByLicense(@Param('medical_license') medical_license: string) {
     return this.doctorsService.findOneByLicense(medical_license);
   }
-  @Get(':mobile')
+  @Get('findByMobile:mobile')
   @Roles(["admin"])
   findByMobile(@Param('mobile') mobile: string) {
     return this.doctorsService.findOneByMobile(mobile);

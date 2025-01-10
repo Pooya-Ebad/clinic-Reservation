@@ -8,6 +8,7 @@ import { UserEntity } from "../users/entities/user.entity";
 import { TokenPayload } from "src/common/types/payload";
 import { DoctorEntity } from "../doctors/entities/doctor.entity";
 import { mobileValidation } from "src/common/utility/mobile.utils";
+import { statusEnum } from "src/common/enums/status.enum";
 
 @Injectable()
 export class AuthService {
@@ -169,10 +170,18 @@ export class AuthService {
         }
         
     }
-    async checkUserRole(mobile : string){
-        const user = await this.userRepository.findOneBy({mobile})
-        if(!user) return new UnauthorizedException("user not found")
-        return user.role
+    async checkUserRole(mobile : string, type : string){
+        let role : string;
+        if(type === "doctor"){
+            const doc = await this.docRepository.findOneBy({mobile})
+            if(doc.status == statusEnum.PENDING || doc.status == statusEnum.REJECTED) throw new UnauthorizedException("حساب شما اجازه دسترسی به این بخش را ندارد")
+            role = doc.role
+        }else{
+            const user = await this.userRepository.findOneBy({mobile})
+            role = user.role
+        }
+        if(!role) return new UnauthorizedException("user not found")
+        return role
     }
     // async setAdmin(roleData : RoleDto){
     //     const { role, mobile } = roleData

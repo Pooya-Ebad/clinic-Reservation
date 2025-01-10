@@ -79,7 +79,7 @@ export function getCityAndProvinceNameByCode(
         cityName = cityRow.name;
       } else {
         throw new BadRequestException(
-          "شهر و استان انتخاب شده باهمدیگر تطابق ندارند"
+          "شهر و استان انتخاب شده با یکدیگر تطابق ندارند"
         );
       }
     }
