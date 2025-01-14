@@ -1,6 +1,8 @@
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm"
 import { CategoryEntity } from "src/module/category/entities/category.entity"
 import { DoctorEntity } from "src/module/doctors/entities/doctor.entity"
+import { ScheduleEntity } from "src/module/doctors/entities/schedule.entity"
+
 import { UserEntity } from "src/module/users/entities/user.entity"
 export class TypeOrmConfig implements TypeOrmOptionsFactory{
     createTypeOrmOptions(connectionName?: string): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
@@ -17,9 +19,9 @@ export class TypeOrmConfig implements TypeOrmOptionsFactory{
         entities: [ 
             "dist/**/**/**/*.entity.{ts,js}",
             "dist/**/**/*.entity.{ts,js}",
-          ], 
-        // entities : [DoctorEntity, UserEntity, CategoryEntity],
-         
+          ],
+          logging : true
+        
         }  
     }   
 }    

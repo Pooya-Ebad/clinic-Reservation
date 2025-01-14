@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFiles } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFiles, Put } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
-import { ChangeStatusDto, CreateDoctorDto } from './dto/create-doctor.dto';
+import { CreateDoctorDto, DoctorConformationDto, ScheduleDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { UploadFileS3 } from 'src/common/interceptors/upload-file.interceptor';
@@ -92,10 +92,21 @@ export class DoctorsController {
   remove(@Param('Medical_license') medical_license: string) {
     return this.doctorsService.remove(medical_license);
   } 
-  @Patch('register')
+  @Patch('register:Medical_license')
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   @Roles(["admin"])
-  register(@Body() changeStatusDto: ChangeStatusDto) {
-    return this.doctorsService.register(changeStatusDto);
-  } 
+  register(
+    @Param('Medical_license') Medical_license : string,
+    @Body() doctorConformationDto: DoctorConformationDto
+  ){
+    return this.doctorsService.register(Medical_license ,doctorConformationDto);
+  }
+  @Put('schedule:id')
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  schedule(
+    @Param('id') id : string,
+    @Body() scheduleDto : ScheduleDto
+  ){
+    return this.doctorsService.SetSchedule(+id, scheduleDto)
+  }
 }

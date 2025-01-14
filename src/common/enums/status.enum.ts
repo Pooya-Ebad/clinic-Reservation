@@ -1,5 +1,6 @@
 export enum statusEnum {
     PENDING = "pending",
     ACCEPTED = "accepted",
-    REJECTED = "rejected"
+    REJECTED = "rejected",
+    DISQUALIFICATION = "disqualification"
 }

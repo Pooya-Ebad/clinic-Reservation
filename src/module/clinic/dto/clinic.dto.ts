@@ -39,9 +39,16 @@ export class ClinicDocumentDto {
   tel_2: string;
 }
 export class ClinicConformationDto{
-  @ApiProperty({enum : statusEnum})
+  @ApiProperty({enum : [statusEnum.ACCEPTED,statusEnum.REJECTED]})
   @IsEnum(statusEnum)
   status : string
   @ApiPropertyOptional()
+  message : string
+}
+export class ClinicDisQualificationDto{
+  @ApiProperty({enum : [statusEnum.DISQUALIFICATION]})
+  @IsEnum(statusEnum)
+  status : string
+  @ApiProperty()
   message : string
 }

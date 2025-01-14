@@ -1,19 +1,23 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { ChangeStatusDto, CreateDoctorDto } from './dto/create-doctor.dto';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { CreateDoctorDto, DoctorConformationDto, ScheduleDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DoctorEntity } from './entities/doctor.entity';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { S3Service } from '../S3/S3.service';
 import { role } from 'src/common/enums/role.enum';
 import { AuthService } from '../auth/auth.service';
 import { CategoryService } from '../category/category.service';
 import { mobileValidation } from 'src/common/utility/mobile.utils';
+import { statusEnum } from 'src/common/enums/status.enum';
+import { ClinicDisQualificationDto } from '../clinic/dto/clinic.dto';
+import { ScheduleEntity } from './entities/schedule.entity';
 
 @Injectable()
 export class DoctorsService {
   constructor(
     @InjectRepository(DoctorEntity) private doctorRepository : Repository<DoctorEntity>,
+    @InjectRepository(ScheduleEntity) private scheduleRepository : Repository<ScheduleEntity>,
     private s3Service : S3Service,
     private authService : AuthService,
     private categoryService : CategoryService,
@@ -72,10 +76,18 @@ export class DoctorsService {
     if(!doctor) throw new UnauthorizedException("doctor not found")
     return doctor
   }
+  async findOneById(id: number) {
+    const doctor = await this.doctorRepository.findOne({
+      where : {id},
+      // relations : {schedule : true} 
+    })
+    if(!doctor) throw new NotFoundException("پزشک یافت نشد")
+    return doctor
+  }
   async findOneByMobile(mobile: string) {
     const doctor = await this.doctorRepository.findOne({
       where : { mobile },
-      relations : {clinic : true}
+      relations : {schedules : true}
     })
     if(!doctor) throw new NotFoundException("پزشک یافت نشد")
     return doctor
@@ -109,13 +121,64 @@ export class DoctorsService {
     await this.doctorRepository.delete({Medical_License_number : medical_license})
     return {message : "doctor deleted successfully"}
   }
-  async register(changeStatusDto : ChangeStatusDto){
-    const { Medical_License_number, status , description} = changeStatusDto
-    let doctor = await this.findOneByLicense(Medical_License_number)
-    const date = new Date()
+  async register(Medical_license : string ,doctorConformationDto : DoctorConformationDto){
+    const { status , message} = doctorConformationDto
+    if(status === statusEnum.REJECTED && !message){
+      throw new BadRequestException("برای رد کردن توضیحات نمیتواند خالی باشد.")
+    }
+    let doctor = await this.findOneByLicense(Medical_license)
     doctor.status = status
-    doctor.description = `${description}\n changed at ${date}`
+    doctor.reason = message
+    doctor.statusCheck_at = new Date()
     await this.doctorRepository.save(doctor)
     return {message : `تغیر کرد ${status} وضعیت کاربر به`}
+  }
+  async DisQualification(Medical_license : string ,disQualification : ClinicDisQualificationDto){
+    const { status, message } = disQualification
+    const clinic = await this.findOneByLicense(Medical_license)
+    clinic.status = status
+    clinic.reason = message
+    clinic.disQualified_at = new Date()
+    await this.doctorRepository.save(clinic)    
+    return {message : "پزشک رد صلاحیت شد."}
+  }
+  async SetSchedule(id : number, scheduleDto : ScheduleDto){
+    const { Day, Visit_Time } = scheduleDto
+    await this.findOneById(id)
+    const schedule = await this.scheduleRepository.findOne({
+      where : {
+      day : Day,
+      doctorId : id
+    }
+    })
+    if(schedule){
+      const [hour, min] = Visit_Time.split(':').map(time=> +time)
+      const visitTimes = schedule.visitTime.split(',')
+      if(visitTimes.includes(Visit_Time)) throw new ConflictException("قبلا این تایم را ست کرده اید.")
+      for(let time of visitTimes){
+        let [scheduleHour, scheduleMin] = time.split(':').map(time=> +time)
+
+        if(scheduleHour === hour){
+          let subtractMin = min - scheduleMin
+          if(Math.abs(subtractMin) < 10){
+            return {message : "هر ویزیت نمیتواند کمتر از ۱۰ دقیقه باشد."}
+          }
+        }
+      }
+      schedule.visitTime += `,${Visit_Time}`
+      await this.scheduleRepository.save(schedule)
+    }else{
+      await this.scheduleRepository.insert({
+        doctorId : id,
+        day : Day,
+        visitTime : Visit_Time,
+      })
+    }
+    const a = this.scheduleRepository.findOne({
+      where : {},
+      relations : {doctor : true}
+    })
+    return a
+    return {message : "زمانبندی تنظیم شد."}
   }
 }

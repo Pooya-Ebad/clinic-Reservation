@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { ClinicEntity } from "./entity/clinic.entity";
 import { Repository } from "typeorm";
 import { S3Service } from "../S3/S3.service";
-import { ClinicConformationDto, ClinicDocumentDto, CreateClinicDto } from "./dto/clinic.dto";
+import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, CreateClinicDto } from "./dto/clinic.dto";
 import { CategoryEntity } from "../category/entities/category.entity";
 import { TokenPayload } from "src/common/types/payload";
 import { isPhoneNumber } from "class-validator";
@@ -111,12 +111,12 @@ export class clinicService {
         if(!clinic) throw new NotFoundException("کلینیک یافت نشد")
         return clinic
     }
-    async confirmation(id : string ,confirmationDto : ClinicConformationDto){
+    async confirmation(id : number ,confirmationDto : ClinicConformationDto){
         const { status, message } = confirmationDto
         if(status === statusEnum.REJECTED && !message){
             throw new BadRequestException("برای رد کردن توضیحات نمیتواند خالی باشد.")
         }
-        const clinic = await this.findById(+id)
+        const clinic = await this.findById(id)
         const doc = await this.doctorService.findOneByMobile(clinic.manager_mobile)
         if(status === statusEnum.ACCEPTED){
             doc.clinicId = clinic.id
@@ -124,8 +124,24 @@ export class clinicService {
             await this.doctorRepository.save(doc)
         }
         clinic.status = status
+        clinic.reason = message
+        clinic.statusCheck_at = new Date()
         await this.clinicRepository.save(clinic)    
         return {message : `تغیر کرد ${status} وضعیت کلینیک به`}
     }
+    async DisQualification(id : number , disQualification : ClinicDisQualificationDto){
+        const { status, message } = disQualification
+        const clinic = await this.findById(id)
+        clinic.status = status
+        clinic.reason = message
+        clinic.disQualified_at = new Date()
+        await this.clinicRepository.save(clinic)    
+        return {message : "کلینیک رد صلاحیت شد."}
+    }
+    async remove(id: number) {
+        await this.findById(id)
+        await this.clinicRepository.delete({id})
+        return {message : "کلینیک با موفقیت حذف شد."}
+      }
 
 }

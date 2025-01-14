@@ -3,7 +3,8 @@ import { EntityName } from "src/common/enums/entities.enum";
 import { role } from "src/common/enums/role.enum";
 import { statusEnum } from "src/common/enums/status.enum";
 import { ClinicEntity } from "src/module/clinic/entity/clinic.entity";
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { ScheduleEntity } from "./schedule.entity";
 
 @Entity(EntityName.Doc)
 export class DoctorEntity {
@@ -27,6 +28,12 @@ export class DoctorEntity {
     description : string
     @Column({type : "enum", enum : statusEnum ,default : statusEnum.PENDING})
     status : string
+    @Column({nullable: true})
+    statusCheck_at: Date;
+    @Column({nullable: true})
+    disQualified_at: Date;
+    @Column({nullable: true})
+    reason: string;
     @Column({default : role.USER})
     role : string
     @CreateDateColumn()
@@ -39,8 +46,10 @@ export class DoctorEntity {
     expires_in : Date
     @Column({nullable : true})
     image : string
+    @OneToMany(()=> ScheduleEntity, (schedule)=>{schedule.doctor})
+    schedules : ScheduleEntity[]
     @Column({nullable : true})
     clinicId : number
     @ManyToOne(()=> ClinicEntity, (clinic)=>{clinic.doctors},{onDelete : "SET NULL"})
     clinic : ClinicEntity
-}
+} 

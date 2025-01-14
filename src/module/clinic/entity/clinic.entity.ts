@@ -31,9 +31,9 @@ export class ClinicEntity {
   @Column({nullable: true})
   reason: string;
   @Column({nullable: true})
-  accepted_at: Date;
+  statusCheck_at: Date;
   @Column({nullable: true})
-  rejected_at: Date;
+  disQualified_at: Date;
   @Column()
   province: string;
   @Column()

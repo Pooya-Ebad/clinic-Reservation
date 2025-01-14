@@ -13,9 +13,10 @@ import { CategoryService } from "../category/category.service";
 import { UserEntity } from "../users/entities/user.entity";
 import { JwtService } from "@nestjs/jwt";
 import { AuthGuard } from "../auth/guard/auth.guard";
+import { ScheduleEntity } from "../doctors/entities/schedule.entity";
 
 @Module({
-    imports : [TypeOrmModule.forFeature([ClinicEntity,CategoryEntity,ClinicDocumentEntity,DoctorEntity,UserEntity])],
+    imports : [TypeOrmModule.forFeature([ClinicEntity,CategoryEntity,ClinicDocumentEntity,DoctorEntity,UserEntity,ScheduleEntity])],
     controllers : [clinicController],
     providers : [clinicService, S3Service, DoctorsService,AuthService,CategoryService,JwtService,AuthGuard]
 })
