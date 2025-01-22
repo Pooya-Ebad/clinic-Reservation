@@ -87,7 +87,7 @@ export class DoctorsService {
   async findOneByMobile(mobile: string) {
     const doctor = await this.doctorRepository.findOne({
       where : { mobile },
-      relations : {schedules : true}
+      relations : {clinic : true}
     })
     if(!doctor) throw new NotFoundException("پزشک یافت نشد")
     return doctor
@@ -154,16 +154,17 @@ export class DoctorsService {
     if(schedule){
       const [hour, min] = Visit_Time.split(':').map(time=> +time)
       const visitTimes = schedule.visitTime.split(',')
+      const setVisitTime = new Date().setUTCHours(hour,min,0,0)
       if(visitTimes.includes(Visit_Time)) throw new ConflictException("قبلا این تایم را ست کرده اید.")
-      for(let time of visitTimes){
-        let [scheduleHour, scheduleMin] = time.split(':').map(time=> +time)
-
-        if(scheduleHour === hour){
-          let subtractMin = min - scheduleMin
-          if(Math.abs(subtractMin) < 10){
-            return {message : "هر ویزیت نمیتواند کمتر از ۱۰ دقیقه باشد."}
+        for(let time of visitTimes){
+          let [scheduleHour, scheduleMin] = time.split(':').map(time=> +time)
+          const setScheduleTime = new Date().setUTCHours(scheduleHour,scheduleMin,0,0)
+          if(scheduleHour === hour || scheduleHour === hour + 1){
+            let subtract = setVisitTime -setScheduleTime
+            if(Math.abs(subtract) < 10 * 60 * 1000){
+              return {message : "هر ویزیت نمیتواند کمتر از ۱۰ دقیقه باشد."}
+            }
           }
-        }
       }
       schedule.visitTime += `,${Visit_Time}`
       await this.scheduleRepository.save(schedule)
@@ -174,11 +175,6 @@ export class DoctorsService {
         visitTime : Visit_Time,
       })
     }
-    const a = this.scheduleRepository.findOne({
-      where : {},
-      relations : {doctor : true}
-    })
-    return a
     return {message : "زمانبندی تنظیم شد."}
   }
 }

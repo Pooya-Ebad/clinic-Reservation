@@ -20,7 +20,6 @@ export class TypeOrmConfig implements TypeOrmOptionsFactory{
             "dist/**/**/**/*.entity.{ts,js}",
             "dist/**/**/*.entity.{ts,js}",
           ],
-          logging : true
         
         }  
     }   

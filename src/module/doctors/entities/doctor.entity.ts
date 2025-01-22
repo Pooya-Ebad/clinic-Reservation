@@ -46,7 +46,7 @@ export class DoctorEntity {
     expires_in : Date
     @Column({nullable : true})
     image : string
-    @OneToMany(()=> ScheduleEntity, (schedule)=>{schedule.doctor})
+    @OneToMany(()=> ScheduleEntity, (schedule)=>schedule.doctor)
     schedules : ScheduleEntity[]
     @Column({nullable : true})
     clinicId : number

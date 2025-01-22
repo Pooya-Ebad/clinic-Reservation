@@ -12,6 +12,6 @@ export class ScheduleEntity{
     visitTime : string
     @Column()
     doctorId : number
-    @ManyToOne(()=> DoctorEntity, doc=>{doc.schedules}, {onDelete : 'CASCADE'})
+    @ManyToOne(()=> DoctorEntity, doc=>doc.schedules, {onDelete : 'CASCADE'})
     doctor : DoctorEntity
 }
