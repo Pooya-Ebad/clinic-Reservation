@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Request } from "express";
+import { findOptionsEnum } from "src/common/enums/findOption.enum";
 import { DoctorsService } from "src/module/doctors/doctors.service";
 
 @Injectable()
@@ -12,7 +13,7 @@ export class ClinicGuard implements CanActivate{
     ) {
         const httpRequest = context.switchToHttp()
         const request : Request = httpRequest.getRequest<Request>()
-        const user = await this.doctorService.findOneByMobile(request.user.mobile)
+        const user = await this.doctorService.findOneBy({Find_Option : findOptionsEnum.Mobile, Value :request.user.mobile})
         if(user.mobile !== user.clinic?.manager_mobile){
             console.log(user.mobile);
             throw new UnauthorizedException("این کلینیک متعلق به شما نیست.")

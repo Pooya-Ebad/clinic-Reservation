@@ -13,6 +13,7 @@ import slugify from "slugify";
 import { DoctorEntity } from "../doctors/entities/doctor.entity";
 import { statusEnum } from "src/common/enums/status.enum";
 import { DoctorsService } from "../doctors/doctors.service";
+import { findOptionsEnum } from "src/common/enums/findOption.enum";
 
 @Injectable()
 export class clinicService {
@@ -71,7 +72,7 @@ export class clinicService {
     return {message : "اطلاعات شما دریافت شد و در صف تایید قرار گرفتید"}
     }
     async addDoctor(docLicense : string, clinicId : number){
-        const doc = await this.doctorService.findOneByLicense(docLicense)
+        const doc = await this.doctorService.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :docLicense})
         const clinic = await this.findById(clinicId)
         if(clinic.status === statusEnum.PENDING || clinic.status === statusEnum.REJECTED){
             throw new UnauthorizedException("کلینیک شما در حال حاضر امکان فعالبت ندارد.")
@@ -117,7 +118,7 @@ export class clinicService {
             throw new BadRequestException("برای رد کردن توضیحات نمیتواند خالی باشد.")
         }
         const clinic = await this.findById(id)
-        const doc = await this.doctorService.findOneByMobile(clinic.manager_mobile)
+        const doc = await this.doctorService.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :clinic.manager_mobile})
         if(status === statusEnum.ACCEPTED){
             doc.clinicId = clinic.id
             clinic.doctorsCount +=1
