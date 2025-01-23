@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFiles, Put } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
-import { CreateDoctorDto, DoctorConformationDto, ScheduleDto } from './dto/create-doctor.dto';
+import { AvailabilityDto, CreateDoctorDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { UploadFileS3 } from 'src/common/interceptors/upload-file.interceptor';
@@ -57,17 +57,34 @@ export class DoctorsController {
   findAll() {
     return this.doctorsService.findAll();
   }
+  @Post('optionalFind')
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  // @Roles(["admin"])
+  findOptional(@Body() findOptions : FindOptionDto) {
+    return this.doctorsService.findOneBy(findOptions);
+  }
+  @Get('getSchedule:id')
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  // @Roles(["admin"])
+  getSchedule(@Param('id') id : string) {
+    return this.doctorsService.getSchedule(+id);
+  }
+  @Get('getAppointment:id')
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  // @Roles(["admin"])
+  getAppointment(@Param('id') id : string) {
+    return this.doctorsService.getAppointment(+id);
+  }
+  @Patch('setAvailability:medical_license')
+  // @Roles(["admin"])
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  setAvailability(
+    @Param('medical_license') medical_license : string,
+    @Body() Availability : AvailabilityDto 
+  ) {
+    return this.doctorsService.setAvailability(medical_license,Availability);
+  }
 
-  @Get('findByLicense:medical_license')
-  @Roles(["admin"])
-  findByLicense(@Param('medical_license') medical_license: string) {
-    return this.doctorsService.findOneByLicense(medical_license);
-  }
-  @Get('findByMobile:mobile')
-  @Roles(["admin"])
-  findByMobile(@Param('mobile') mobile: string) {
-    return this.doctorsService.findOneByMobile(mobile);
-  }
   @Patch('update:Medical_license')
   @Roles(["admin"])
   @ApiConsumes(SwaggerEnums.Multipart)

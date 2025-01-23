@@ -1,9 +1,9 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { CreateDoctorDto, DoctorConformationDto, ScheduleDto } from './dto/create-doctor.dto';
+import { AvailabilityDto, CreateDoctorDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DoctorEntity } from './entities/doctor.entity';
-import { Like, Repository } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import { S3Service } from '../S3/S3.service';
 import { role } from 'src/common/enums/role.enum';
 import { AuthService } from '../auth/auth.service';
@@ -12,6 +12,9 @@ import { mobileValidation } from 'src/common/utility/mobile.utils';
 import { statusEnum } from 'src/common/enums/status.enum';
 import { ClinicDisQualificationDto } from '../clinic/dto/clinic.dto';
 import { ScheduleEntity } from './entities/schedule.entity';
+import { toBoolean } from 'src/common/utility/function.utils';
+import { AvailabilityEnum } from 'src/common/enums/availabilityEnum';
+import { findOptionsEnum } from 'src/common/enums/findOption.enum';
 
 @Injectable()
 export class DoctorsService {
@@ -68,35 +71,23 @@ export class DoctorsService {
   async findAll() {
     return await this.doctorRepository.find({})
   }
-  async findOneByLicense(medical_license: string) {
+  async findOneBy(findOption: FindOptionDto) {
+    const { Find_Option, Value } = findOption
+    let where : FindOptionsWhere<DoctorEntity> = {};
+    if(Find_Option === findOptionsEnum.Id) where["id"] = +Value
+    if(Find_Option === findOptionsEnum.Medical_License) where["Medical_License_number"] = Value
+    if(Find_Option === findOptionsEnum.Mobile) where["mobile"] = Value
     const doctor = await this.doctorRepository.findOne({
-      where : {Medical_License_number : medical_license},
-      relations : {clinic : true}
+      where
     })
-    if(!doctor) throw new UnauthorizedException("doctor not found")
-    return doctor
-  }
-  async findOneById(id: number) {
-    const doctor = await this.doctorRepository.findOne({
-      where : {id},
-      // relations : {schedule : true} 
-    })
-    if(!doctor) throw new NotFoundException("پزشک یافت نشد")
-    return doctor
-  }
-  async findOneByMobile(mobile: string) {
-    const doctor = await this.doctorRepository.findOne({
-      where : { mobile },
-      relations : {clinic : true}
-    })
-    if(!doctor) throw new NotFoundException("پزشک یافت نشد")
-    return doctor
+    if(!doctor) throw new UnauthorizedException("پزشک یافت نشد.")
+    return doctor;
   }
 
   async update(medical_license: string, updateDoctorDto: UpdateDoctorDto, image : Express.Multer.File[]) {
     const { mobile } = updateDoctorDto
     let updateData : any = {}
-    await this.findOneByLicense(medical_license)
+    await this.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :medical_license})
     for (const data in updateDoctorDto) {
       if(updateDoctorDto[data]){
         updateData[data] = updateDoctorDto[data]
@@ -117,25 +108,34 @@ export class DoctorsService {
   }
 
   async remove(medical_license: string) {
-    await this.findOneByLicense(medical_license)
+    await this.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :medical_license})
     await this.doctorRepository.delete({Medical_License_number : medical_license})
     return {message : "doctor deleted successfully"}
   }
-  async register(Medical_license : string ,doctorConformationDto : DoctorConformationDto){
+  async register(medical_license : string ,doctorConformationDto : DoctorConformationDto){
     const { status , message} = doctorConformationDto
     if(status === statusEnum.REJECTED && !message){
       throw new BadRequestException("برای رد کردن توضیحات نمیتواند خالی باشد.")
     }
-    let doctor = await this.findOneByLicense(Medical_license)
+    let doctor = await this.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :medical_license})
     doctor.status = status
     doctor.reason = message
     doctor.statusCheck_at = new Date()
     await this.doctorRepository.save(doctor)
     return {message : `تغیر کرد ${status} وضعیت کاربر به`}
   }
-  async DisQualification(Medical_license : string ,disQualification : ClinicDisQualificationDto){
+  async setAvailability(medical_license : string ,availabilityDto : AvailabilityDto){
+    const { Availability } = availabilityDto
+    let doctor = await this.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :medical_license})
+    console.log(Availability);
+    const toBoolean = Availability===AvailabilityEnum.Available ? true : false
+    doctor.availability = toBoolean
+    await this.doctorRepository.save(doctor)
+    return {message : `اکنون پزشک ${toBoolean?"در دسترس":"در تعطیلات"} میباشد`}
+  }
+  async DisQualification(medical_license : string ,disQualification : ClinicDisQualificationDto){
     const { status, message } = disQualification
-    const clinic = await this.findOneByLicense(Medical_license)
+    const clinic = await this.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value : medical_license})
     clinic.status = status
     clinic.reason = message
     clinic.disQualified_at = new Date()
@@ -144,7 +144,7 @@ export class DoctorsService {
   }
   async SetSchedule(id : number, scheduleDto : ScheduleDto){
     const { Day, Visit_Time } = scheduleDto
-    await this.findOneById(id)
+    await this.findOneBy({Find_Option : findOptionsEnum.Id, Value : id.toString()})
     const schedule = await this.scheduleRepository.findOne({
       where : {
       day : Day,
@@ -177,4 +177,29 @@ export class DoctorsService {
     }
     return {message : "زمانبندی تنظیم شد."}
   }
-}
+  async getSchedule(id : number){
+    let doctor = await this.doctorRepository.findOne({
+      where : { id },
+      select : ["schedules",'id'],
+      relations : {schedules : true}
+    })
+    if(!doctor) throw new UnauthorizedException("پزشک یافت نشد.")
+    let schedule = doctor.schedules.map(schedule=>{
+      return {
+        day : schedule.day,
+        visitTime : schedule.visitTime.split(',')
+      } as any
+    })
+    return schedule
+  }
+  async getAppointment(id : number){
+    let doctor = await this.doctorRepository.findOne({
+      where : { id },
+      select : ["appointments",'id'],
+      relations : {appointments : true}
+    })
+    if(!doctor) throw new UnauthorizedException("پزشک یافت نشد.")
+    let appointment = doctor.appointments
+    return appointment
+  }
+} 
