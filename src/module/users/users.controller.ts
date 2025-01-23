@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards, Query, Req, UsePipes, ValidationPipe, Global } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards, Query, Req, UsePipes, ValidationPipe, Global, Put } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { FindUserDto } from './dto/create-user.dto';
+import { AppointmentDto, FindUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { SwaggerEnums } from 'src/common/enums/swagger.enum';
@@ -32,6 +32,11 @@ export class UsersController {
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   update(@Param('mobile') mobile: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(mobile, updateUserDto);
+  }
+  @Put('setAppointment')
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  setAppointment(@Body() appointmentDto : AppointmentDto){
+    return this.usersService.setAppointment(appointmentDto)
   }
   
   @Delete(':mobile')

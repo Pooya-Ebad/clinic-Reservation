@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsMobilePhone, IsString } from "class-validator";
+import { WeekDays } from "src/common/enums/week.days.enum";
 
 export class FindUserDto {
     @ApiProperty()
@@ -16,5 +17,15 @@ export class CreateUserDto {
     @ApiProperty()
     @IsMobilePhone ("fa-IR", {}, {message : "phone number is incorrect"})
     mobile : string
+}
+export class AppointmentDto {
+    @ApiProperty()
+    userId : number
+    @ApiProperty()
+    doctorId : number
+    @ApiProperty()
+    visit_time : string
+    @ApiProperty({enum : WeekDays})
+    visit_day : string
 }
 

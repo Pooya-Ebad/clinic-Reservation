@@ -1,6 +1,7 @@
 import { EntityName } from "src/common/enums/entities.enum";
 import { role } from "src/common/enums/role.enum";
-import { Column, CreateDateColumn, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { AppointmentEntity } from "./appointment.entity";
 
 @Entity(EntityName.User)
 export class UserEntity {
@@ -24,4 +25,6 @@ export class UserEntity {
     otp : string
     @Column({nullable : true})
     expires_in : Date
+    @OneToMany(()=>AppointmentEntity, (appointment)=>appointment.user)
+    appointments : AppointmentEntity[]
 }
