@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger"
 import { IsEnum, isEnum, IsMobilePhone, IsString, Length, Matches } from "class-validator"
+import { AvailabilityEnum } from "src/common/enums/availabilityEnum"
 import { categoryEnum } from "src/common/enums/category.enum"
+import { findOptionsEnum } from "src/common/enums/findOption.enum"
 import { statusEnum } from "src/common/enums/status.enum"
 import { WeekDays } from "src/common/enums/week.days.enum"
 
@@ -52,5 +54,16 @@ export class ScheduleDto {
         message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
       })
     Visit_Time : string
+}
+export class AvailabilityDto {
+    @ApiProperty({enum : AvailabilityEnum})
+    Availability : string
+}
+ 
+export class FindOptionDto {
+    @ApiProperty({enum : findOptionsEnum})
+    Find_Option : string
+    @ApiProperty()
+    Value : string
 }
  

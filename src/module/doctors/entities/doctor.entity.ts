@@ -5,6 +5,7 @@ import { statusEnum } from "src/common/enums/status.enum";
 import { ClinicEntity } from "src/module/clinic/entity/clinic.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { ScheduleEntity } from "./schedule.entity";
+import { AppointmentEntity } from "src/module/users/entities/appointment.entity";
 
 @Entity(EntityName.Doc)
 export class DoctorEntity {
@@ -46,10 +47,14 @@ export class DoctorEntity {
     expires_in : Date
     @Column({nullable : true})
     image : string
+    @Column({type : 'boolean', default : true})
+    availability : boolean
     @OneToMany(()=> ScheduleEntity, (schedule)=>schedule.doctor)
     schedules : ScheduleEntity[]
     @Column({nullable : true})
     clinicId : number
     @ManyToOne(()=> ClinicEntity, (clinic)=>{clinic.doctors},{onDelete : "SET NULL"})
     clinic : ClinicEntity
+    @OneToMany(()=> AppointmentEntity, (appointment)=>appointment.doctor)
+    appointments : AppointmentEntity[]
 } 
