@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { AvailabilityDto, CreateDoctorDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
+import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DoctorEntity } from './entities/doctor.entity';
@@ -214,5 +214,31 @@ export class DoctorsService {
     if(!doctor) throw new UnauthorizedException("پزشک یافت نشد.")
     let appointment = doctor.appointments
     return appointment
+  }
+  async deleteSchedule(docId : number, deleteAppointmentDto : DeleteScheduleDto){
+    let { Day, Visit_Time, New_Visit_Time, New_Price} = deleteAppointmentDto
+    let schedule = await this.getSchedule(docId)
+    let visitTime : string;
+    let price : string;
+    New_Visit_Time = New_Visit_Time==="null" || ""? null : New_Visit_Time
+    New_Price = New_Price==="null" || ""? null : New_Price
+
+    schedule = schedule.map(schedule=>{
+      if(schedule.day === Day){
+        schedule.details.map(detail=>{
+          if(detail.visitTime=== Visit_Time){
+            detail.visitTime = New_Visit_Time || detail.visitTime
+            detail.price = New_Price || detail.price
+            return schedule
+          }
+
+        })/////////////////
+      }
+      return schedule
+    })
+    console.log(JSON.stringify(schedule));
+    console.log(await this.scheduleRepository.findOneBy({doctorId : docId}));
+    await this.scheduleRepository.save(schedule)
+    return {message : "زماتبندی ویزیت با موفقیت بروزرسانی شد."}
   }
 } 

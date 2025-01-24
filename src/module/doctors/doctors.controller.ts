@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFiles, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFiles, Put, Req, UseGuards } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
-import { AvailabilityDto, CreateDoctorDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
+import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { UploadFileS3 } from 'src/common/interceptors/upload-file.interceptor';
@@ -9,6 +9,8 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { SwaggerEnums } from 'src/common/enums/swagger.enum';
 import { CheckOtpDto, CreateOtpDto, SendOtpDto } from '../auth/dto/auth.dto';
 import { AuthService } from '../auth/auth.service';
+import { Request } from 'express';
+import { AuthGuard } from '../auth/guard/auth.guard';
 
 @ApiBearerAuth("Authorization")
 @Controller('doctors')
@@ -134,5 +136,18 @@ export class DoctorsController {
   @Roles(["admin"])
   remove(@Param('Medical_license') medical_license: string) {
     return this.doctorsService.remove(medical_license);
+  } 
+  @Delete('delSchedule/:id')
+  // @UseGuards(AuthGuard)
+  // @Roles(["admin"])
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  removeSchedule(
+    @Param('id') id: string,
+    @Body() deleteScheduleDto : DeleteScheduleDto,
+    @Req() request :Request
+  ) {
+    
+    //request.user.id
+    return this.doctorsService.deleteSchedule(1, deleteScheduleDto);
   } 
 }
