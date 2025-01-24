@@ -13,6 +13,8 @@ export class UserEntity {
     last_name : string
     @Column({unique : true})
     mobile : string
+    @Column({default : 0})
+    wallet : number
     @Column({default : false})
     mobile_verify : boolean
     @Column({default : role.USER})
