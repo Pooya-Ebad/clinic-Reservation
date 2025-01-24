@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsMobilePhone, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { IsMobilePhone, IsString, Matches } from "class-validator";
 import { WeekDays } from "src/common/enums/week.days.enum";
 
 export class FindUserDto {
@@ -26,7 +27,10 @@ export class ChargeDto {
 export class AppointmentDto {
     @ApiProperty()
     doctorId : number
-    @ApiProperty()
+    @ApiProperty({example : "00:00"})
+    @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
+        message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
+    })
     visit_time : string
     @ApiProperty({enum : WeekDays})
     visit_day : string

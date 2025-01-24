@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger"
-import { IsEnum, isEnum, IsMobilePhone, IsString, Length, Matches } from "class-validator"
+import { Transform, Type } from "class-transformer"
+import { IsEnum, isEnum, IsMobilePhone, IsOptional, IsString, Length, Matches } from "class-validator"
 import { AvailabilityEnum } from "src/common/enums/availabilityEnum"
 import { categoryEnum } from "src/common/enums/category.enum"
 import { findOptionsEnum } from "src/common/enums/findOption.enum"
@@ -67,5 +68,24 @@ export class FindOptionDto {
     Find_Option : string
     @ApiProperty()
     Value : string
+}
+export class DeleteScheduleDto {
+    @ApiProperty({enum : WeekDays})
+    @IsEnum(WeekDays)
+    Day : string
+    @ApiProperty({example : "00:00"})
+    @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
+        message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
+    }) 
+    Visit_Time : string
+    @ApiPropertyOptional({example : "00:00", nullable : true})
+    @Transform(({ value }) => (value === '' ? null : value))
+    @IsOptional()
+    @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
+        message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
+    })
+    New_Visit_Time : string
+    @ApiPropertyOptional()
+    New_Price : string
 }
  
