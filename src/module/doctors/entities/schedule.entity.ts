@@ -11,6 +11,8 @@ export class ScheduleEntity{
     @Column()
     visitTime : string
     @Column()
+    price : string
+    @Column()
     doctorId : number
     @ManyToOne(()=> DoctorEntity, doc=>doc.schedules, {onDelete : 'CASCADE'})
     doctor : DoctorEntity
