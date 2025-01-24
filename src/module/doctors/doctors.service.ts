@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { AvailabilityDto, CreateDoctorDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -143,7 +143,9 @@ export class DoctorsService {
     return {message : "پزشک رد صلاحیت شد."}
   }
   async SetSchedule(id : number, scheduleDto : ScheduleDto){
-    const { Day, Visit_Time } = scheduleDto
+    const { Day, Visit_Time, price } = scheduleDto
+    if(+price < 30000)
+      throw new ForbiddenException("حداقل مبلغ قاببل قبول ۳۰۰۰۰ تومان میباشد.")
     await this.findOneBy({Find_Option : findOptionsEnum.Id, Value : id.toString()})
     const schedule = await this.scheduleRepository.findOne({
       where : {
@@ -167,12 +169,14 @@ export class DoctorsService {
           }
       }
       schedule.visitTime += `,${Visit_Time}`
+      schedule.price += `,${price}`
       await this.scheduleRepository.save(schedule)
     }else{
       await this.scheduleRepository.insert({
         doctorId : id,
         day : Day,
         visitTime : Visit_Time,
+        price
       })
     }
     return {message : "زمانبندی تنظیم شد."}
@@ -185,9 +189,18 @@ export class DoctorsService {
     })
     if(!doctor) throw new UnauthorizedException("پزشک یافت نشد.")
     let schedule = doctor.schedules.map(schedule=>{
+      let details = []
+      const visitTime = schedule.visitTime.split(',')
+      const price = schedule.price.split(',')
+      for( let i = 0; i < visitTime.length ; i++){
+        details.push({
+          visitTime : visitTime[i],
+          price : price[i]
+        })
+      }
       return {
         day : schedule.day,
-        visitTime : schedule.visitTime.split(',')
+        details
       } as any
     })
     return schedule

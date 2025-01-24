@@ -52,8 +52,10 @@ export class ScheduleDto {
     @ApiProperty({example : "00:00"})
     @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
         message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
-      })
+    })
     Visit_Time : string
+    @ApiProperty()
+    price : string
 }
 export class AvailabilityDto {
     @ApiProperty({enum : AvailabilityEnum})

@@ -23,6 +23,7 @@ export class DoctorsController {
   signup(@Body() otpDto : CreateOtpDto) {
     return this.authService.signup(otpDto, "doctor")
   }
+
   @Post("signup-step2:mobile")
   @ApiConsumes(SwaggerEnums.Multipart)
   @UseInterceptors(UploadFileS3("image"))
@@ -41,15 +42,24 @@ export class DoctorsController {
   ) {
     return this.doctorsService.create(createDoctorDto, image, mobile);
   }
+
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   @Post("login")
   login(@Body() otpDto : SendOtpDto) {
       return this.authService.sendOtp(otpDto)
   }
+
   @Post("check-otp")
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   checkOtp(@Body() otpDto : CheckOtpDto) {
       return this.authService.checkOtp(otpDto,"doctor")
+  }
+
+  @Post('optionalFind')
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  // @Roles(["admin"])
+  findOptional(@Body() findOptions : FindOptionDto) {
+    return this.doctorsService.findOneBy(findOptions);
   }
 
   @Get()
@@ -57,24 +67,21 @@ export class DoctorsController {
   findAll() {
     return this.doctorsService.findAll();
   }
-  @Post('optionalFind')
-  @ApiConsumes(SwaggerEnums.UrlEncoded)
-  // @Roles(["admin"])
-  findOptional(@Body() findOptions : FindOptionDto) {
-    return this.doctorsService.findOneBy(findOptions);
-  }
+
   @Get('getSchedule:id')
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   // @Roles(["admin"])
   getSchedule(@Param('id') id : string) {
     return this.doctorsService.getSchedule(+id);
   }
+
   @Get('getAppointment:id')
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   // @Roles(["admin"])
   getAppointment(@Param('id') id : string) {
     return this.doctorsService.getAppointment(+id);
   }
+
   @Patch('setAvailability:medical_license')
   // @Roles(["admin"])
   @ApiConsumes(SwaggerEnums.UrlEncoded)
@@ -83,6 +90,16 @@ export class DoctorsController {
     @Body() Availability : AvailabilityDto 
   ) {
     return this.doctorsService.setAvailability(medical_license,Availability);
+  }
+
+  @Patch('register:Medical_license')
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  @Roles(["admin"])
+  register(
+    @Param('Medical_license') Medical_license : string,
+    @Body() doctorConformationDto: DoctorConformationDto
+  ){
+    return this.doctorsService.register(Medical_license ,doctorConformationDto);
   }
 
   @Patch('update:Medical_license')
@@ -103,27 +120,19 @@ export class DoctorsController {
     @Param('Medical_license') Medical_license : string
     ) {
       return this.doctorsService.update(Medical_license, updateDoctorDto, image);
-  }
+    }
+    @Put('schedule:id')
+    @ApiConsumes(SwaggerEnums.UrlEncoded)
+    schedule(
+      @Param('id') id : string,
+      @Body() scheduleDto : ScheduleDto
+    ){
+      return this.doctorsService.SetSchedule(+id, scheduleDto)
+    }
+
   @Delete(':Medical_license')
   @Roles(["admin"])
   remove(@Param('Medical_license') medical_license: string) {
     return this.doctorsService.remove(medical_license);
   } 
-  @Patch('register:Medical_license')
-  @ApiConsumes(SwaggerEnums.UrlEncoded)
-  @Roles(["admin"])
-  register(
-    @Param('Medical_license') Medical_license : string,
-    @Body() doctorConformationDto: DoctorConformationDto
-  ){
-    return this.doctorsService.register(Medical_license ,doctorConformationDto);
-  }
-  @Put('schedule:id')
-  @ApiConsumes(SwaggerEnums.UrlEncoded)
-  schedule(
-    @Param('id') id : string,
-    @Body() scheduleDto : ScheduleDto
-  ){
-    return this.doctorsService.SetSchedule(+id, scheduleDto)
-  }
 }
