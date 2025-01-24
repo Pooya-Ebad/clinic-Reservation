@@ -13,6 +13,8 @@ export class AppointmentEntity {
     userId : number
     @Column()
     Visit_Date : string
+    @Column()
+    price : string
     @Column({type : 'enum',enum : {Reserved : "reserved",Pending : "pending", Done : "done", Canceled : "canceled"}, default : "pending"})
     status : string
     @CreateDateColumn()

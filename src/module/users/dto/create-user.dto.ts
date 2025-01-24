@@ -18,9 +18,12 @@ export class CreateUserDto {
     @IsMobilePhone ("fa-IR", {}, {message : "phone number is incorrect"})
     mobile : string
 }
-export class AppointmentDto {
+export class ChargeDto {
     @ApiProperty()
-    userId : number
+    @IsString()
+    amount : string
+}
+export class AppointmentDto {
     @ApiProperty()
     doctorId : number
     @ApiProperty()
