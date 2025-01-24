@@ -143,6 +143,6 @@ export class clinicService {
         await this.findById(id)
         await this.clinicRepository.delete({id})
         return {message : "کلینیک با موفقیت حذف شد."}
-      }
+    }
 
 }
