@@ -12,7 +12,7 @@ import { mobileValidation } from 'src/common/utility/mobile.utils';
 import { statusEnum } from 'src/common/enums/status.enum';
 import { ClinicDisQualificationDto } from '../clinic/dto/clinic.dto';
 import { ScheduleEntity } from './entities/schedule.entity';
-import { toBoolean } from 'src/common/utility/function.utils';
+import { checkTime, toBoolean } from 'src/common/utility/function.utils';
 import { AvailabilityEnum } from 'src/common/enums/availabilityEnum';
 import { findOptionsEnum } from 'src/common/enums/findOption.enum';
 
@@ -127,7 +127,6 @@ export class DoctorsService {
   async setAvailability(medical_license : string ,availabilityDto : AvailabilityDto){
     const { Availability } = availabilityDto
     let doctor = await this.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :medical_license})
-    console.log(Availability);
     const toBoolean = Availability===AvailabilityEnum.Available ? true : false
     doctor.availability = toBoolean
     await this.doctorRepository.save(doctor)
@@ -154,28 +153,20 @@ export class DoctorsService {
     }
     })
     if(schedule){
-      const [hour, min] = Visit_Time.split(':').map(time=> +time)
       const visitTimes = schedule.visitTime.split(',')
-      const setVisitTime = new Date().setUTCHours(hour,min,0,0)
-      if(visitTimes.includes(Visit_Time)) throw new ConflictException("قبلا این تایم را ست کرده اید.")
-        for(let time of visitTimes){
-          let [scheduleHour, scheduleMin] = time.split(':').map(time=> +time)
-          const setScheduleTime = new Date().setUTCHours(scheduleHour,scheduleMin,0,0)
-          if(scheduleHour === hour || scheduleHour === hour + 1){
-            let subtract = setVisitTime -setScheduleTime
-            if(Math.abs(subtract) < 10 * 60 * 1000){
-              return {message : "هر ویزیت نمیتواند کمتر از ۱۰ دقیقه باشد."}
-            }
-          }
-      }
-      schedule.visitTime += `,${Visit_Time}`
+      if(visitTimes.includes(Visit_Time)) 
+        throw new ConflictException("قبلا این تایم را ست کرده اید.")
+
+      checkTime(visitTimes, Visit_Time,10) // check that the new schedule is at least 10 minutes different
+
+      schedule.visitTime += `${Visit_Time},`
       schedule.price += `,${price}`
       await this.scheduleRepository.save(schedule)
     }else{
       await this.scheduleRepository.insert({
         doctorId : id,
         day : Day,
-        visitTime : Visit_Time,
+        visitTime : `${Visit_Time},`,
         price
       })
     }
@@ -190,8 +181,16 @@ export class DoctorsService {
     if(!doctor) throw new UnauthorizedException("پزشک یافت نشد.")
     let schedule = doctor.schedules.map(schedule=>{
       let details = []
-      const visitTime = schedule.visitTime.split(',')
-      const price = schedule.price.split(',')
+      const visitTime = schedule.visitTime
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean)
+
+      const price = schedule.price
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean)
+
       for( let i = 0; i < visitTime.length ; i++){
         details.push({
           visitTime : visitTime[i],
@@ -215,15 +214,30 @@ export class DoctorsService {
     let appointment = doctor.appointments
     return appointment
   }
-  async deleteSchedule(docId : number, deleteAppointmentDto : DeleteScheduleDto){
+  async updateSchedule(docId : number, deleteAppointmentDto : DeleteScheduleDto){
     let { Day, Visit_Time, New_Visit_Time, New_Price} = deleteAppointmentDto
-    let schedule = await this.getSchedule(docId)
-    let visitTime : string;
-    let price : string;
-    New_Visit_Time = New_Visit_Time==="null" || ""? null : New_Visit_Time
-    New_Price = New_Price==="null" || ""? null : New_Price
+    if(New_Price && +New_Price < 30000)
+      throw new ForbiddenException("حداقل مبلغ قاببل قبول ۳۰۰۰۰ تومان میباشد.")
+    let docSchedule = await this.getSchedule(docId)
+    const schedule = await this.scheduleRepository.findOne({
+        where : {
+        day : Day,
+        doctorId : docId
+      }
+    })
+    const visitList = schedule.visitTime.split(',')
+    visitList.length = visitList.length -1
 
-    schedule = schedule.map(schedule=>{
+    if(visitList.includes(New_Visit_Time)) 
+      throw new ConflictException("قبلا این تایم را ست کرده اید.")
+    if(!visitList.includes(Visit_Time)) 
+      throw new ConflictException("زمانبندی مورد نظر یافت نشد.")
+
+    checkTime(visitList.filter(value=> value != Visit_Time), New_Visit_Time, 10)
+    let times = "";
+    let visit_price = "";
+
+    docSchedule = docSchedule.map(schedule=>{
       if(schedule.day === Day){
         schedule.details.map(detail=>{
           if(detail.visitTime=== Visit_Time){
@@ -231,13 +245,18 @@ export class DoctorsService {
             detail.price = New_Price || detail.price
             return schedule
           }
-
-        })/////////////////
+        })
       }
       return schedule
     })
-    console.log(JSON.stringify(schedule));
-    console.log(await this.scheduleRepository.findOneBy({doctorId : docId}));
+    for(let i = 0; i < docSchedule.length; i++){
+      for(let j = 0; j < docSchedule[i].details.length; j++){
+        times += `${docSchedule[i].details[j].visitTime},`
+        visit_price += `${docSchedule[i].details[j].price},`
+      }
+    }
+    schedule.visitTime = times
+    schedule.price = visit_price
     await this.scheduleRepository.save(schedule)
     return {message : "زماتبندی ویزیت با موفقیت بروزرسانی شد."}
   }

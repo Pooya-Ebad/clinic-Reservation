@@ -11,6 +11,7 @@ import { CheckOtpDto, CreateOtpDto, SendOtpDto } from '../auth/dto/auth.dto';
 import { AuthService } from '../auth/auth.service';
 import { Request } from 'express';
 import { AuthGuard } from '../auth/guard/auth.guard';
+import { role } from 'src/common/enums/role.enum';
 
 @ApiBearerAuth("Authorization")
 @Controller('doctors')
@@ -55,6 +56,15 @@ export class DoctorsController {
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   checkOtp(@Body() otpDto : CheckOtpDto) {
       return this.authService.checkOtp(otpDto,"doctor")
+  }
+
+  @Post('schedule:docId')
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  schedule(
+    @Param('id') docId : string,
+    @Body() scheduleDto : ScheduleDto
+  ){
+    return this.doctorsService.SetSchedule(+docId, scheduleDto)
   }
 
   @Post('optionalFind')
@@ -103,8 +113,8 @@ export class DoctorsController {
   ){
     return this.doctorsService.register(Medical_license ,doctorConformationDto);
   }
-
-  @Patch('update:Medical_license')
+  
+  @Put('update:Medical_license')
   @Roles(["admin"])
   @ApiConsumes(SwaggerEnums.Multipart)
   @UseInterceptors(UploadFileS3("image"))
@@ -120,34 +130,23 @@ export class DoctorsController {
     ) image : Express.Multer.File[],
     @Body() updateDoctorDto: UpdateDoctorDto,
     @Param('Medical_license') Medical_license : string
-    ) {
-      return this.doctorsService.update(Medical_license, updateDoctorDto, image);
-    }
-    @Put('schedule:id')
-    @ApiConsumes(SwaggerEnums.UrlEncoded)
-    schedule(
-      @Param('id') id : string,
-      @Body() scheduleDto : ScheduleDto
-    ){
-      return this.doctorsService.SetSchedule(+id, scheduleDto)
-    }
+  ) {
+    return this.doctorsService.update(Medical_license, updateDoctorDto, image);
+  }
+  @Patch('Schedule')
+  @UseGuards(AuthGuard)
+  @Roles([role.ADMIN, role.DOCTOR])
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  updateSchedule(
+    @Body() deleteScheduleDto : DeleteScheduleDto,
+    @Req() request :Request
+  ) {
+    return this.doctorsService.updateSchedule(request.user.id, deleteScheduleDto);
+  }  
 
   @Delete(':Medical_license')
   @Roles(["admin"])
   remove(@Param('Medical_license') medical_license: string) {
     return this.doctorsService.remove(medical_license);
-  } 
-  @Delete('delSchedule/:id')
-  // @UseGuards(AuthGuard)
-  // @Roles(["admin"])
-  @ApiConsumes(SwaggerEnums.UrlEncoded)
-  removeSchedule(
-    @Param('id') id: string,
-    @Body() deleteScheduleDto : DeleteScheduleDto,
-    @Req() request :Request
-  ) {
-    
-    //request.user.id
-    return this.doctorsService.deleteSchedule(1, deleteScheduleDto);
   } 
 }
