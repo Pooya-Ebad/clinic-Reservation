@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
-import { UpdateDoctorDto } from './dto/update-doctor.dto';
+import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, FindOptionDto, ScheduleDto, UpdateScheduleDto } from './dto/doctor.dto';
+import { UpdateDoctorDto } from './dto/update.doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DoctorEntity } from './entities/doctor.entity';
 import { FindOptionsWhere, Like, Repository } from 'typeorm';
@@ -160,14 +160,14 @@ export class DoctorsService {
       checkTime(visitTimes, Visit_Time,10) // check that the new schedule is at least 10 minutes different
 
       schedule.visitTime += `${Visit_Time},`
-      schedule.price += `,${price}`
+      schedule.price += `${price},`
       await this.scheduleRepository.save(schedule)
     }else{
       await this.scheduleRepository.insert({
         doctorId : id,
         day : Day,
         visitTime : `${Visit_Time},`,
-        price
+        price : `${price},`
       })
     }
     return {message : "زمانبندی تنظیم شد."}
@@ -214,8 +214,8 @@ export class DoctorsService {
     let appointment = doctor.appointments
     return appointment
   }
-  async updateSchedule(docId : number, deleteAppointmentDto : DeleteScheduleDto){
-    let { Day, Visit_Time, New_Visit_Time, New_Price} = deleteAppointmentDto
+  async updateSchedule(docId : number, updateSchedule : UpdateScheduleDto){
+    let { Day, Visit_Time, New_Visit_Time, New_Price} = updateSchedule
     if(New_Price && +New_Price < 30000)
       throw new ForbiddenException("حداقل مبلغ قاببل قبول ۳۰۰۰۰ تومان میباشد.")
     let docSchedule = await this.getSchedule(docId)
@@ -225,14 +225,14 @@ export class DoctorsService {
         doctorId : docId
       }
     })
-    const visitList = schedule.visitTime.split(',')
+    const visitList = schedule?.visitTime?.split(',') 
+    if(!schedule || !visitList?.includes(Visit_Time))
+      throw new NotFoundException("زمانبندی مورد نظر یافت نشد.")
+
     visitList.length = visitList.length -1
 
     if(visitList.includes(New_Visit_Time)) 
       throw new ConflictException("قبلا این تایم را ست کرده اید.")
-    if(!visitList.includes(Visit_Time)) 
-      throw new ConflictException("زمانبندی مورد نظر یافت نشد.")
-
     checkTime(visitList.filter(value=> value != Visit_Time), New_Visit_Time, 10)
     let times = "";
     let visit_price = "";
@@ -259,5 +259,30 @@ export class DoctorsService {
     schedule.price = visit_price
     await this.scheduleRepository.save(schedule)
     return {message : "زماتبندی ویزیت با موفقیت بروزرسانی شد."}
+  }
+  async deleteSchedule(id : number, deleteScheduleDto : DeleteScheduleDto){
+    const { Day, Visit_Time } = deleteScheduleDto
+    const schedule = await this.scheduleRepository.findOne({
+      where : {
+        day : Day,
+        doctorId : id
+      }
+    })
+    let visitList = schedule?.visitTime?.split(',')
+    if(!schedule || !visitList?.includes(Visit_Time)){
+      throw new NotFoundException("زمانبندی مورد نظر یافت نشد.")
+    }
+    let priceList = schedule.price.split(',')
+    for(let item of visitList){
+        if(item === Visit_Time){
+          let index = visitList.indexOf(item)
+          visitList = visitList.filter(value => value !== item)
+          priceList.splice(index,1)
+        }
+    }
+    schedule.visitTime = visitList.join(',')
+    schedule.price = priceList.join(',')
+    await this.scheduleRepository.save(schedule)
+    return {message : "زمانبدی مورد نظر با مفقیت پاک شد."}
   }
 } 

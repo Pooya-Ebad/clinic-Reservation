@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFiles, Put, Req, UseGuards } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
-import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, FindOptionDto, ScheduleDto } from './dto/create-doctor.dto';
-import { UpdateDoctorDto } from './dto/update-doctor.dto';
+import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, FindOptionDto, ScheduleDto, UpdateScheduleDto } from './dto/doctor.dto';
+import { UpdateDoctorDto } from './dto/update.doctor.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { UploadFileS3 } from 'src/common/interceptors/upload-file.interceptor';
 import { toMG } from 'src/common/utility/function.utils';
@@ -61,7 +61,7 @@ export class DoctorsController {
   @Post('schedule:docId')
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   schedule(
-    @Param('id') docId : string,
+    @Param('docId') docId : string,
     @Body() scheduleDto : ScheduleDto
   ){
     return this.doctorsService.SetSchedule(+docId, scheduleDto)
@@ -134,19 +134,29 @@ export class DoctorsController {
     return this.doctorsService.update(Medical_license, updateDoctorDto, image);
   }
   @Patch('Schedule')
-  @UseGuards(AuthGuard)
-  @Roles([role.ADMIN, role.DOCTOR])
+  // @UseGuards(AuthGuard)
+  // @Roles([role.ADMIN, role.DOCTOR])
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   updateSchedule(
+    @Body() updateScheduleDto : UpdateScheduleDto,
+    @Req() request :Request
+  ) {
+    return this.doctorsService.updateSchedule(1, updateScheduleDto);
+  }  
+
+  @Delete('delete/doctor:Medical_license')
+  @Roles(["admin"])
+  removeDoc(@Param('Medical_license') medical_license: string) {
+    return this.doctorsService.remove(medical_license);
+  } 
+
+  @Delete('delete/schedule')
+  // @Roles(["admin"])
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  removeSchedule(
     @Body() deleteScheduleDto : DeleteScheduleDto,
     @Req() request :Request
   ) {
-    return this.doctorsService.updateSchedule(request.user.id, deleteScheduleDto);
-  }  
-
-  @Delete(':Medical_license')
-  @Roles(["admin"])
-  remove(@Param('Medical_license') medical_license: string) {
-    return this.doctorsService.remove(medical_license);
+    return this.doctorsService.deleteSchedule(1, deleteScheduleDto);
   } 
 }
