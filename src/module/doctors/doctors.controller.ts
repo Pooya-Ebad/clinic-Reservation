@@ -114,6 +114,17 @@ export class DoctorsController {
     return this.doctorsService.register(Medical_license ,doctorConformationDto);
   }
   
+  @Patch('Schedule')
+  // @UseGuards(AuthGuard)
+  // @Roles([role.ADMIN, role.DOCTOR])
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  updateSchedule(
+    @Body() updateScheduleDto : UpdateScheduleDto,
+    @Req() request :Request
+  ) {
+    return this.doctorsService.updateSchedule(1, updateScheduleDto);
+  }  
+
   @Put('update:Medical_license')
   @Roles(["admin"])
   @ApiConsumes(SwaggerEnums.Multipart)
@@ -133,17 +144,7 @@ export class DoctorsController {
   ) {
     return this.doctorsService.update(Medical_license, updateDoctorDto, image);
   }
-  @Patch('Schedule')
-  // @UseGuards(AuthGuard)
-  // @Roles([role.ADMIN, role.DOCTOR])
-  @ApiConsumes(SwaggerEnums.UrlEncoded)
-  updateSchedule(
-    @Body() updateScheduleDto : UpdateScheduleDto,
-    @Req() request :Request
-  ) {
-    return this.doctorsService.updateSchedule(1, updateScheduleDto);
-  }  
-
+  
   @Delete('delete/doctor:Medical_license')
   @Roles(["admin"])
   removeDoc(@Param('Medical_license') medical_license: string) {
