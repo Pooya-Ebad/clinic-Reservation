@@ -5,7 +5,7 @@ import {
   IsPhoneNumber,
 } from "class-validator";
 import { categoryEnum } from "src/common/enums/category.enum";
-import { statusEnum } from "src/common/enums/status.enum";
+import { AppointmentStatusEnum, statusEnum } from "src/common/enums/status.enum";
 
 export class CreateClinicDto {
   @ApiProperty()
@@ -51,4 +51,9 @@ export class ClinicDisQualificationDto{
   status : string
   @ApiProperty()
   message : string
+}
+export class GetAppointmentsDto{
+  @ApiProperty({enum : AppointmentStatusEnum})
+  @IsEnum(AppointmentStatusEnum)
+  status : string
 }

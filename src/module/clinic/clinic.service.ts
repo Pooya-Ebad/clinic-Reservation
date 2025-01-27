@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { ClinicEntity } from "./entity/clinic.entity";
 import { Repository } from "typeorm";
 import { S3Service } from "../S3/S3.service";
-import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, CreateClinicDto } from "./dto/clinic.dto";
+import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, CreateClinicDto} from "./dto/clinic.dto";
 import { CategoryEntity } from "../category/entities/category.entity";
 import { TokenPayload } from "src/common/types/payload";
 import { isPhoneNumber } from "class-validator";
@@ -28,7 +28,6 @@ export class clinicService {
     async create(createClinicDto: CreateClinicDto , user : TokenPayload) {
     let { name,  address, city, province, category }= createClinicDto
     const {provinceName, cityName} = getCityAndProvinceNameByCode(province,city)
-    console.log(province);
     const categoryExists = await this.categoryRepository.findOneBy({title : category})
     if(!categoryExists) throw new NotFoundException("category not found")
     const doc = await this.doctorRepository.findOneBy({id : user.id})
@@ -144,5 +143,53 @@ export class clinicService {
         await this.clinicRepository.delete({id})
         return {message : "کلینیک با موفقیت حذف شد."}
     }
-
+    async getAppointments(status : string){
+        let docPromise = []
+        let list_of_appointment = []
+        const doctors = await this.clinicRepository.find({
+            select : {
+                id : true,
+                doctors : {id : true}
+            },
+            relations : {doctors : true}    
+        })
+        for(let doctor of doctors){
+            doctor.doctors.map(value=>{
+                docPromise.push(
+                    this.doctorRepository.find({
+                        where : {
+                            id : value.id
+                        },
+                        relations : {appointments : {user : true}}
+                    })
+                )  
+            })
+        }
+        const resolvedDocPromises  = await Promise.all(docPromise)
+        docPromise = resolvedDocPromises.map(value=>{
+            return value.map(index=>{
+                return index.appointments.map(detail=>{
+                    if(detail.status === status){
+                        const {user ,id, doctorId,created_at, ...other_detail} = detail
+                        return {
+                            doctor_name : index.first_name + ` ${index.last_name}`,
+                            patient_name : detail.user.first_name + ` ${detail.user.last_name}`,
+                            ...other_detail
+                        }
+                    }  
+                })
+             })
+        })
+        for (const element of docPromise) {
+            const available_appointment = element[0].filter(value=>  value !== undefined)
+            if(available_appointment.length > 0){
+                list_of_appointment.push(available_appointment)
+            }
+        }
+        
+        return list_of_appointment.length>0
+        ? list_of_appointment 
+        : {message: "هیج نوبت ویزیتی یافت نشد."}
+    }
+ 
 }

@@ -1,4 +1,4 @@
-import { statusEnum } from "src/common/enums/status.enum";
+import { AppointmentStatusEnum, statusEnum } from "src/common/enums/status.enum";
 import { DoctorEntity } from "src/module/doctors/entities/doctor.entity";
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { UserEntity } from "./user.entity";
@@ -15,7 +15,7 @@ export class AppointmentEntity {
     Visit_Date : string
     @Column()
     price : string
-    @Column({type : 'enum',enum : {Reserved : "reserved",Pending : "pending", Done : "done", Canceled : "canceled"}, default : "pending"})
+    @Column({type : 'enum',enum : AppointmentStatusEnum, default : AppointmentStatusEnum.pending})
     status : string
     @CreateDateColumn()
     created_at : Date
