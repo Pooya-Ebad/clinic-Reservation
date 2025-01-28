@@ -89,6 +89,8 @@ export class UpdateScheduleDto {
     New_Price : string
 }
 export class DeleteScheduleDto {
+    @ApiProperty()
+    doctorId : number
     @ApiProperty({enum : WeekDays})
     @IsEnum(WeekDays)
     Day : string

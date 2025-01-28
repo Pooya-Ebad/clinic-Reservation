@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, InternalServerErrorException } from "@nestjs/common"
 import { appendFile, appendFileSync, existsSync, readFileSync, writeFileSync } from "fs"
+import { PaginationDto } from "../dto/pagination.dto"
 
 export function isBoolean(value : any){
     return [true , "true", "True", false , "false", "False"].includes(value)
@@ -35,5 +36,29 @@ export function checkTime(VisitList : string[], newTime : string, value : number
                 throw new BadRequestException(`هر ویزیت نمیتواند کمتر از ${value} دقیقه باشد.`)
             }
         }
+    }
+}
+export function pagination(paginationDto : PaginationDto){
+    let { limit, page } = paginationDto
+    if(!limit || limit < 10 ) limit = 10
+    else if(limit > 100) limit = 100
+    if(!page || page <= 1 ) page = 0
+    else if(page > 1) page -= 1
+    return {
+        page,
+        limit,
+        skip : page * limit
+    }
+}
+export function PaginationGenerator(
+    page : number,
+    limit : number,
+    count : number,
+){
+    return {
+        total_count : count,
+        page,
+        limit,
+        skip : page * limit,
     }
 }

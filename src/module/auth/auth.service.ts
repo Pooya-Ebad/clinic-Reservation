@@ -1,8 +1,8 @@
-import { ConflictException, Injectable, NotFoundException, Request, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, Injectable, NotFoundException, Request, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { randomInt} from "crypto";
-import { CheckOtpDto, CreateOtpDto, RefreshTokenDto, RoleDto, SendOtpDto } from "./dto/auth.dto";
+import { ChargeDto, CheckOtpDto, CreateOtpDto, RefreshTokenDto, RoleDto, SendOtpDto } from "./dto/auth.dto";
 import { JwtService } from "@nestjs/jwt";
 import { UserEntity } from "../users/entities/user.entity";
 import { TokenPayload } from "src/common/types/payload";
@@ -71,7 +71,7 @@ export class AuthService {
         let user = await this.userRepository.findOneBy({mobile : phoneNumber})
         if(user){
             if(user?.expires_in > new Date(new Date().getTime())){
-                throw new NotFoundException("otp code not expired")
+                throw new ConflictException("otp code not expired")
             }
             user.otp = code;
             user.expires_in = expiration
@@ -80,14 +80,14 @@ export class AuthService {
         let doc = await this.docRepository.findOneBy({mobile : phoneNumber})
         if(doc){
             if(doc?.expires_in > new Date(new Date().getTime())){
-                throw new NotFoundException("otp code not expired")
+                throw new ConflictException("otp code not expired")
             }
             doc.otp = code;
             doc.expires_in = expiration
             await this.docRepository.save(doc)
         }
         if(!user && !doc){
-            throw new UnauthorizedException("user not found")
+            throw new NotFoundException("user not found")
         }
         return {
             message : "code sent"
@@ -109,7 +109,7 @@ export class AuthService {
         }
         //@ts-ignore
         if(!profile || !profile?.otp){
-            throw new UnauthorizedException("user Not Found")
+            throw new NotFoundException("user Not Found")
         }
         //@ts-ignore
         if(profile?.otp !== code){
@@ -216,5 +216,24 @@ export class AuthService {
         }
         
     }
-
+    async profile(id : number){
+        const user = await this.userRepository.findOne({
+            where : {
+                id
+            },
+            relations : {appointments : true}
+        })
+        if(!user)
+            throw new NotFoundException("پروفایل یافت نشد.")
+        return user
+    }
+    async chargeWallet(id : number, chargeDto : ChargeDto){
+        const { amount } = chargeDto
+        if(+amount <= 5000)
+          throw new ForbiddenException("امکان شاژ کمتر از ۵۰۰۰ تومان ممکن نمیباشد.")
+        const user = await this.userRepository.findOneBy({id})
+        user.wallet += +amount
+        await this.userRepository.save(user)
+        return {message : "حساب شما با موفقیت شارژ شد."}
+    }
 }

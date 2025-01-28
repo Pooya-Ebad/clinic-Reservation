@@ -156,8 +156,7 @@ export class DoctorsController {
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   removeSchedule(
     @Body() deleteScheduleDto : DeleteScheduleDto,
-    @Req() request :Request
   ) {
-    return this.doctorsService.deleteSchedule(1, deleteScheduleDto);
+    return this.doctorsService.deleteSchedule(deleteScheduleDto);
   } 
 }

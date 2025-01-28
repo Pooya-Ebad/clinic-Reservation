@@ -1,79 +1,255 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards, Query, Req, UsePipes, ValidationPipe, Global, Put } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { AppointmentDto, ChargeDto, FindUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import { SwaggerEnums } from 'src/common/enums/swagger.enum';
-import { AuthGuard } from '../auth/guard/auth.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { Request } from 'express';
+import {
+  Controller,
+  Get,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+  Put,
+} from "@nestjs/common";
+import { UsersService } from "./users.service";
+import {
+  AppointmentDto,
+  CancelAppointmentDto,
+  FindUserDto,
+  UpdateUserDto,
+  UserSearchDto,
+} from "./dto/user.dto";
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
+import { SwaggerEnums } from "src/common/enums/swagger.enum";
+import { AuthGuard } from "../auth/guard/auth.guard";
+import { Roles } from "src/common/decorators/roles.decorator";
+import { Pagination } from "src/common/decorators/pagination.decorator";
+import { PaginationDto } from "src/common/dto/pagination.dto";
+import { role } from "src/common/enums/role.enum";
 
-@Controller('users')
+@Controller("users")
 @ApiBearerAuth("Authorization")
-@ApiTags("users")
+@UseGuards(AuthGuard)
+@ApiTags("Users")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-  
+
+  @Roles([role.ADMIN])
   @Get()
-  @Roles(["admin"])
-  @UseGuards(AuthGuard)
-  findAll() {
-    return this.usersService.findAll();
+  @ApiOperation({
+    summary: "search users",
+    description: "you can find users with following options",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "when users found",
+    schema: {
+      example: {
+        pagination: {
+          total_count: 1,
+          page: 0,
+          limit: "10",
+          skip: 0,
+        },
+        user: [
+          {
+            id: 1,
+            first_name: "پویا",
+            last_name: "عباداللهی",
+            mobile: "09196715197",
+            wallet: 99999,
+            mobile_verify: true,
+            role: "admin",
+            created_at: "2025-03-25T18:01:20.338Z",
+            updated_at: "2025-01-28T15:10:05.214Z",
+            otp: "90483",
+            expires_in: "2025-01-28T14:46:09.000Z",
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "when no result found",
+    schema: {
+      example: {
+        message: "نتیحه ای یافت نشد.",
+        error: "Not Found",
+        statusCode: 404,
+      },
+    },
+  })
+  @Pagination()
+  find(
+    @Query() paginationDto: PaginationDto,
+    @Query() searchDto: UserSearchDto
+  ) {
+    return this.usersService.find(paginationDto, searchDto);
   }
 
-  
+  @Roles([role.ADMIN])
+  @Get("get-appointments:mobile")
+  @ApiOperation({ summary: "take user appointments" })
+  @ApiResponse({
+    status: 200,
+    description: "when result found",
+    schema: {
+      example: [
+        {
+          id: 1,
+          doctorId: 1,
+          userId: 1,
+          Visit_Date: "1403/11/15 12:14",
+          price: "99999",
+          status: "pending",
+          created_at: "2025-01-26T16:19:54.079Z",
+          payment: false,
+          payment_date: null,
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "when no result found",
+    schema: {
+      example: {
+        message: "هیچ ویزیتی برای کاربر یافت نشد.",
+        error: "Not Found",
+        statusCode: 404,
+      },
+    },
+  })
   @ApiConsumes(SwaggerEnums.UrlEncoded)
-  @Roles(["admin"])
-  @UseGuards(AuthGuard)
-  @Get("find-one/:mobile")
-  async findOne(@Param("mobile") mobile: string) {
-    return await this.usersService.checkExistUser(mobile);
+  @ApiParam({ name: "mobile", example: "09100000000" })
+  getAppointment(@Param() userDto: FindUserDto) {
+    return this.usersService.getAppointment(userDto.mobile);
   }
 
-  @Get('getAppointment:id')
+  @Roles([role.ADMIN])
+  @Patch("update-user:mobile")
+  @ApiOperation({ summary: "update user profile" })
+  @ApiResponse({
+    status: 200,
+    description: "after updating user information",
+    schema: {
+      example: {
+        id: 2,
+        first_name: "پویا",
+        last_name: "عباداللهی",
+        mobile: "09196715197",
+        wallet: 99999,
+        mobile_verify: false,
+        role: "user",
+        created_at: "2025-06-24T13:21:29.000Z",
+        updated_at: "2025-01-28T17:44:57.000Z",
+        otp: null,
+        expires_in: null,
+      },
+    },
+  })
   @ApiConsumes(SwaggerEnums.UrlEncoded)
-  // @Roles(["admin"])
-  getAppointment(@Param('id') id : string) {
-    return this.usersService.getAppointment(+id);
-  }
-  
-  @Patch('update-user:mobile')
-  @ApiConsumes(SwaggerEnums.UrlEncoded)
-  update(@Param('mobile') mobile: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(mobile, updateUserDto);
+  update(@Param() userDto: FindUserDto, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(userDto.mobile, updateUserDto);
   }
 
-  @Put('setAppointment')
-  @UseGuards(AuthGuard)
+  @Roles([role.ADMIN])
+  @Put("set-appointment")
+  @ApiOperation({ summary: "set appointment for user" })
+  @ApiResponse({
+    status: 200,
+    description: "after updating user information",
+    schema: {
+      example: {
+        message:
+          ".نوبت با موفقیت رزرو شد. شما میتوانید با مراجعه به بخش پرداخت نسبت به نهایی کردن ویزیت خود اقدام کنید",
+      },
+    },
+  })
   @ApiConsumes(SwaggerEnums.UrlEncoded)
-  setAppointment(
-    @Body() appointmentDto : AppointmentDto,
-    @Req() request : Request
-  ){
-    return this.usersService.setAppointment(request.user.id, appointmentDto)
-  }
-  
-  @Put('chargeWallet')
-  @UseGuards(AuthGuard)
-  @ApiConsumes(SwaggerEnums.UrlEncoded)
-  chargeWallet(
-    @Body() chargeDto : ChargeDto,
-    @Req() request : Request
-  ){
-    return this.usersService.chargeWallet(request.user.id, chargeDto)
+  setAppointment(@Body() appointmentDto: AppointmentDto) {
+    return this.usersService.setAppointment(appointmentDto);
   }
 
-  @Put('payment:id')
-  payment(@Param('id') id : string){
-    return this.usersService.payment(+id)
-  }
-  
-  @Delete(':mobile')
-  @Roles(["admin"])
-  @UseGuards(AuthGuard)
-  remove(@Param('mobile') mobile: string) {
-    return this.usersService.remove(mobile);
+  @Roles([role.ADMIN])
+  @Put("payment:appointment_id")
+  @ApiOperation({
+    summary: "paying for the visit",
+    description:
+      "after successful payment, the visit will be booked for the user",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "after updating user information",
+    schema: {
+      example: {
+        message: "پرداخت با موفقیت انجام شد.",
+      },
+    },
+  })
+  payment(@Param("appointment_id") appointment_id: string) {
+    return this.usersService.payment(+appointment_id);
   }
 
+  @Roles([role.ADMIN])
+  @Put("cancel-appointment")
+  @ApiOperation({ summary: "cancel user appointment" })
+  @ApiResponse({
+    status: 200,
+    description: "after updating user information",
+    schema: {
+      example: {
+        message:
+          "نوبت ویزیت با موفقیت کنسل شد و هزینه آن به کیف پول شما عودت داده شد.",
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "after updating user information",
+    schema: {
+      example: {
+        message: ".نوبت یافت نشد! از پرداخت هزینه ویزیت اطمینان حاصل کنید",
+        error: "Not Found",
+        statusCode: 404,
+      },
+    },
+  })
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  cancel(@Body() cancelDto: CancelAppointmentDto) {
+    return this.usersService.cancelAppointment(cancelDto);
+  }
+
+  @Roles([role.ADMIN])
+  @Delete(":mobile")
+  @ApiOperation({ summary: "delete user information" })
+  @ApiResponse({
+    status: 200,
+    description: "if deletion was successful",
+    schema: {
+      example: {
+        message: "کاربر با موفقیت حذف شد.",
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "if deletion was not successful",
+    schema: {
+      example: {
+        message: "کاربر یافت نشد",
+        error: "Not Found",
+        statusCode: 404,
+      },
+    },
+  })
+  remove(@Param() userDto: FindUserDto) {
+    return this.usersService.remove(userDto.mobile);
+  }
 }
- 

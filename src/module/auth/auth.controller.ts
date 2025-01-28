@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Global, Patch, Post, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Global, Patch, Post, Put, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { CheckOtpDto, CreateOtpDto, RefreshTokenDto, RoleDto, SendOtpDto } from "./dto/auth.dto";
+import { ChargeDto, CheckOtpDto, CreateOtpDto, RefreshTokenDto, RoleDto, SendOtpDto } from "./dto/auth.dto";
 import { ApiBearerAuth, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
 import { AuthGuard } from "./guard/auth.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
+import { Request } from "express";
+import { role } from "src/common/enums/role.enum";
 
 @Controller('auth')
 @UsePipes(ValidationPipe)
@@ -31,6 +33,23 @@ export class AuthController {
     @ApiConsumes(SwaggerEnums.UrlEncoded)
     refreshToken(@Body() refreshTokenDto : RefreshTokenDto) {
         return this.authService.verifyRefreshToken(refreshTokenDto)
+    }
+    @Get('profile')
+    @UseGuards(AuthGuard)
+    @Roles([role.USER])
+    profile(
+        @Req() request : Request
+    ){
+        return this.authService.profile(request.user.id)
+    }
+    @Put('charge-wallet')
+    @UseGuards(AuthGuard)
+    @ApiConsumes(SwaggerEnums.UrlEncoded)
+    chargeWallet(
+    @Body() chargeDto : ChargeDto,
+    @Req() request : Request
+    ){
+    return this.authService.chargeWallet(request.user.id, chargeDto)
     }
     // @Roles(["admin"])
     // @UseGuards(AuthGuard)

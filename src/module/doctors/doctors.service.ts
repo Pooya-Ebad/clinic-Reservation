@@ -260,12 +260,12 @@ export class DoctorsService {
     await this.scheduleRepository.save(schedule)
     return {message : "زماتبندی ویزیت با موفقیت بروزرسانی شد."}
   }
-  async deleteSchedule(id : number, deleteScheduleDto : DeleteScheduleDto){
-    const { Day, Visit_Time } = deleteScheduleDto
+  async deleteSchedule(deleteScheduleDto : DeleteScheduleDto){
+    const { Day, Visit_Time, doctorId } = deleteScheduleDto
     const schedule = await this.scheduleRepository.findOne({
       where : {
         day : Day,
-        doctorId : id
+        doctorId
       }
     })
     let visitList = schedule?.visitTime?.split(',')

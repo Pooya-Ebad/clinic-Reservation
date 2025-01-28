@@ -41,3 +41,8 @@ export class RefreshTokenDto {
     @IsJWT({message : "token incorrect"})
     RefreshToken : string
 }
+export class ChargeDto {
+    @ApiProperty({description : "the minimum amount is 5000 toman"})
+    @IsString()
+    amount : string
+}
