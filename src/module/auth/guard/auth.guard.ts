@@ -16,8 +16,8 @@ export class AuthGuard implements CanActivate{
     ) {
         const httpRequest = context.switchToHttp()
         const request : Request = httpRequest.getRequest<Request>()
-        // const token = this.extractToken(request)
-        request.user = await this.authService.validateAccessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidHlwZSI6InVzZXIiLCJtb2JpbGUiOiIwOTkwMzA0MDQ1OSIsImlhdCI6MTczODA3NDk4NiwiZXhwIjoxNzQwNjY2OTg2fQ.kAPOi4rZFJWFPrN3CXUQIGngNFsj0tK_x8UfdOygFfA")    
+        const token = this.extractToken(request)
+        request.user = await this.authService.validateAccessToken(token)    
         const requiredRole : string[] = this.reflector.get(ROLE_KEY, context.getHandler());
         if(requiredRole && requiredRole.length>0){
             const userRole = await this.authService.checkUserRole(request.user.mobile, request.user.type)

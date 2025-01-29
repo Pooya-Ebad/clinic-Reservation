@@ -1,30 +1,7 @@
-import {
-  Controller,
-  Get,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  Query,
-  Put,
-} from "@nestjs/common";
+import { Controller, Get, Body, Patch, Param, Delete, UseGuards, Query, Put, } from "@nestjs/common";
 import { UsersService } from "./users.service";
-import {
-  AppointmentDto,
-  CancelAppointmentDto,
-  FindUserDto,
-  UpdateUserDto,
-  UserSearchDto,
-} from "./dto/user.dto";
-import {
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from "@nestjs/swagger";
+import { AppointmentDto, FindUserDto, GetAppointmentDto, UpdateUserDto, UserSearchDto, } from "./dto/user.dto";
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags, } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
 import { AuthGuard } from "../auth/guard/auth.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
@@ -178,7 +155,7 @@ export class UsersController {
   }
 
   @Roles([role.ADMIN])
-  @Put("payment:appointment_id")
+  @Put("payment")
   @ApiOperation({
     summary: "paying for the visit",
     description:
@@ -193,8 +170,9 @@ export class UsersController {
       },
     },
   })
-  payment(@Param("appointment_id") appointment_id: string) {
-    return this.usersService.payment(+appointment_id);
+  @ApiConsumes(SwaggerEnums.UrlEncoded)
+  payment(@Body() getAppointmentDto: GetAppointmentDto) {
+    return this.usersService.payment(getAppointmentDto);
   }
 
   @Roles([role.ADMIN])
@@ -222,7 +200,7 @@ export class UsersController {
     },
   })
   @ApiConsumes(SwaggerEnums.UrlEncoded)
-  cancel(@Body() cancelDto: CancelAppointmentDto) {
+  cancel(@Body() cancelDto: GetAppointmentDto) {
     return this.usersService.cancelAppointment(cancelDto);
   }
 

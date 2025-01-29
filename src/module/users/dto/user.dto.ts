@@ -52,7 +52,7 @@ export class AppointmentDto {
   @ApiProperty({ enum: WeekDays })
   visit_day: string;
 }
-export class CancelAppointmentDto {
+export class GetAppointmentDto {
   @ApiProperty()
   appointment_id: number;
   @ApiProperty()

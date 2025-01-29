@@ -1,26 +1,8 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserEntity } from "./entities/user.entity";
-import {
-  Between,
-  FindOptionsWhere,
-  ILike,
-  LessThanOrEqual,
-  MoreThanOrEqual,
-  Repository,
-} from "typeorm";
-import {
-  AppointmentDto,
-  CancelAppointmentDto,
-  UpdateUserDto,
-  UserSearchDto,
-} from "./dto/user.dto";
+import { Between, FindOptionsWhere, ILike, LessThanOrEqual, MoreThanOrEqual, Repository, } from "typeorm";
+import { AppointmentDto, GetAppointmentDto, UpdateUserDto, UserSearchDto } from "./dto/user.dto";
 import { mobileValidation } from "src/common/utility/mobile.utils";
 import { DoctorsService } from "../doctors/doctors.service";
 import { WeekDays } from "src/common/enums/week.days.enum";
@@ -29,10 +11,7 @@ import { AppointmentEntity } from "./entities/appointment.entity";
 import { isDate } from "class-validator";
 import { AppointmentStatusEnum } from "src/common/enums/status.enum";
 import { PaginationDto } from "src/common/dto/pagination.dto";
-import {
-  pagination,
-  PaginationGenerator,
-} from "src/common/utility/function.utils";
+import { pagination, PaginationGenerator, } from "src/common/utility/function.utils";
 
 @Injectable()
 export class UsersService {
@@ -97,7 +76,6 @@ export class UsersService {
 
   async update(QueryMobile: string, updateUserDto: UpdateUserDto) {
     const { first_name, last_name, mobile } = updateUserDto;
-    console.log(QueryMobile);
     const { phoneNumber } = mobileValidation(QueryMobile);
     const user = await this.checkExistUser(phoneNumber);
     user.first_name = first_name || user.first_name;
@@ -147,6 +125,20 @@ export class UsersService {
       return schedule.visitTime == visit_time;
     });
     if (!detail) throw new NotFoundException("این زمانبندی وجود ندارد.");
+    if (
+      docAppointment.find(
+        (appointment) => (
+          appointment.Visit_Date === date &&
+          appointment.status === AppointmentStatusEnum.reserved ||
+          appointment.status === AppointmentStatusEnum.done
+        ) 
+      )
+    )
+      throw new ConflictException("این نوبت ویزیت قبلا رزو شده است.");
+    if (
+      user.appointments.find((appointment) => appointment.Visit_Date === date)
+    )
+      throw new ConflictException("شما در این زمان نوبت ویزیت دیگری دارید.");
     if (user.wallet < detail.price)
       throw new ForbiddenException("مقدار کیف پول شما کافی نمیباشد.");
     const [nowDate, nowTime] = moment()
@@ -188,25 +180,10 @@ export class UsersService {
       visit.set("second", 0);
       visit.set("millisecond", 0);
       date = visit.format("jYYYY/jMM/jDD HH:mm");
-      const [targetDate, targetTime] = date.split(" ");
-
-      if (
-        user.appointments.find((appointment) => appointment.Visit_Date === date)
-      )
-        throw new ConflictException("شما در این زمان نوبت ویزیت دیگری دارید.");
-      if (
-        docAppointment.find(
-          (appointment) =>
-            (appointment.Visit_Date === date &&
-              appointment.status === AppointmentStatusEnum.reserved) ||
-            appointment.status === AppointmentStatusEnum.done
-        )
-      )
-        throw new ConflictException("این نوبت ویزیت قبلا رزو شده است.");
+      const [targetDate] = date.split(" ");
       if (
         nowDate == targetDate &&
-        new Date().setHours(+hour, +min, 0, 0) <
-          new Date().setHours(+currentHour, +currentMin, 0, 0)
+        new Date().setHours(+hour, +min, 0, 0) < new Date().setHours(+currentHour, +currentMin, 0, 0)
       )
         throw new ConflictException("تاریخ این ویزیت گذشته است.");
 
@@ -215,14 +192,7 @@ export class UsersService {
         userId: user_id,
         Visit_Date: date,
         price: detail.price,
-      });
-
-      await this.userRepository.update(
-        { id: user_id },
-        {
-          wallet: user.wallet - detail.price,
-        }
-      );
+      })
       return {
         message:
           ".نوبت با موفقیت رزرو شد. شما میتوانید با مراجعه به بخش پرداخت نسبت به نهایی کردن ویزیت خود اقدام کنید",
@@ -245,17 +215,27 @@ export class UsersService {
     return appointment;
   }
 
-  async payment(id: number) {
-    const appointment = await this.findAppointment(id);
+  async payment(getAppointmentDto : GetAppointmentDto) {
+    const { appointment_id, user_id } = getAppointmentDto
+    const [appointment, user] = await Promise.all([
+      this.findAppointment(appointment_id),
+      this.checkExistUserById(user_id)
+    ])
     if (appointment.status !== AppointmentStatusEnum.pending)
       throw new ConflictException("امکان پرداخت برای این ویزیت ممکن نمیباشد.");
+    if (appointment.userId != user_id)
+      throw new NotFoundException("اطلاعات کاربر و ویزیت هم خوانی ندارند.");
     appointment.payment = true;
     appointment.payment_date = new Date();
     appointment.status = AppointmentStatusEnum.reserved;
-    await this.appointmentRepository.save(appointment);
+    user.wallet -= +appointment.price
+    await Promise.all([
+      this.appointmentRepository.save(appointment),
+      this.userRepository.save(user)
+    ])
     return { message: "پرداخت با موفقیت انجام شد." };
   }
-  async cancelAppointment(cancelDto: CancelAppointmentDto) {
+  async cancelAppointment(cancelDto: GetAppointmentDto) {
     const { appointment_id, user_id } = cancelDto;
     let confirmation = false;
     let appointment: AppointmentEntity;
