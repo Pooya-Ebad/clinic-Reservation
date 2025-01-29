@@ -1,13 +1,6 @@
 import { EntityName } from "src/common/enums/entities.enum";
 import { role } from "src/common/enums/role.enum";
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn, } from "typeorm";
 import { AppointmentEntity } from "./appointment.entity";
 
 @Entity(EntityName.User)

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { Transform, Type } from "class-transformer";
+import { Transform } from "class-transformer";
 import { IsMobilePhone, IsOptional, IsString, Matches } from "class-validator";
 import { WeekDays } from "src/common/enums/week.days.enum";
 

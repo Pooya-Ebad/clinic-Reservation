@@ -1,14 +1,6 @@
-import {
-  AppointmentStatusEnum
-} from "src/common/enums/status.enum";
+import { AppointmentStatusEnum } from "src/common/enums/status.enum";
 import { DoctorEntity } from "src/module/doctors/entities/doctor.entity";
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, } from "typeorm";
 import { UserEntity } from "./user.entity";
 
 @Entity("appointment")
