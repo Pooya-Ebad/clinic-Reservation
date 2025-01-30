@@ -1,8 +1,8 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException, Request, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { randomInt} from "crypto";
-import { ChargeDto, CheckOtpDto, CreateOtpDto, RefreshTokenDto, RoleDto, SendOtpDto } from "./dto/auth.dto";
+import { ChargeDto, CheckOtpDto, CreateOtpDto, RefreshTokenDto, SendOtpDto } from "./dto/auth.dto";
 import { JwtService } from "@nestjs/jwt";
 import { UserEntity } from "../users/entities/user.entity";
 import { TokenPayload } from "src/common/types/payload";
@@ -12,228 +12,306 @@ import { statusEnum } from "src/common/enums/status.enum";
 
 @Injectable()
 export class AuthService {
-    constructor(
-        @InjectRepository(UserEntity) private userRepository : Repository<UserEntity>,
-        @InjectRepository(DoctorEntity) private docRepository : Repository<DoctorEntity>,
-        private jwtService : JwtService
-    ){}
-    private createOtp(){
-        let code = randomInt(10000 , 99999).toString()
-        let expiration = new Date(new Date().getTime() + (1000*60 *10) )
-        return {code , expiration}
+  constructor(
+    @InjectRepository(UserEntity)
+    private userRepository: Repository<UserEntity>,
+    @InjectRepository(DoctorEntity)
+    private docRepository: Repository<DoctorEntity>,
+    private jwtService: JwtService
+  ) {}
+  private createOtp() {
+    let code = randomInt(10000, 99999).toString();
+    let expiration = new Date(new Date().getTime() + 1000 * 60 * 2);
+    return { code, expiration };
+  }
+  async signup(OtpDto: CreateOtpDto, type: string) {
+    const { mobile, first_name, last_name } = OtpDto;
+    const { phoneNumber } = mobileValidation(mobile);
+    const { code, expiration } = this.createOtp();
+    const date = new Date().getTime();
+    if (type === "doctor") {
+      let doc = await this.docRepository.findOneBy({ mobile: phoneNumber });
+      if (!doc) {
+        doc = this.docRepository.create({
+          first_name,
+          last_name,
+          mobile: phoneNumber,
+          otp: code,
+          expires_in: expiration,
+        });
+      } else if (doc?.expires_in > new Date(date)) {
+        const remain = new Date(doc.expires_in.getTime() - date);
+        let [remainMin, remainSec] = [
+          remain.getUTCMinutes(),
+          remain.getUTCSeconds(),
+        ];
+        const remainTime = `0${remainMin}:${remainSec < 10 ? `0${remainSec}` : remainSec}`;
+        throw new ConflictException({
+          message: ".کد تایید منقضی نشده است",
+          remain_time: remainTime,
+        });
+      } else if (!doc?.mobile_verify) {
+        doc.otp = code;
+        doc.expires_in = expiration;
+      } else {
+        throw new ConflictException(".با این شماره تلفن قبلا ثبت نام کرده اید");
+      }
+      await this.docRepository.save(doc);
+    } else if (type === "user") {
+      let user = await this.userRepository.findOneBy({ mobile: phoneNumber });
+      if (!user) {
+        user = this.userRepository.create({
+          first_name,
+          last_name,
+          mobile: phoneNumber,
+          otp: code,
+          expires_in: expiration,
+        });
+      } else if (user?.expires_in > new Date(date)) {
+        const remain = new Date(user.expires_in.getTime() - date);
+        let [remainMin, remainSec] = [
+          remain.getUTCMinutes(),
+          remain.getUTCSeconds(),
+        ];
+        const remainTime = `0${remainMin}:${remainSec < 10 ? `0${remainSec}` : remainSec}`;
+        throw new ConflictException({
+          message: ".کد تایید منقضی نشده است",
+          remain_time: remainTime,
+        });
+      } else if (!user?.mobile_verify) {
+        user.otp = code;
+        user.expires_in = expiration;
+      } else {
+        throw new ConflictException(".با این شماره تلفن قبلا ثبت نام کرده اید");
+      }
+      await this.userRepository.save(user);
     }
-    async signup(OtpDto : CreateOtpDto, type : string){
-        const {mobile, first_name, last_name} = OtpDto
-        const { phoneNumber} = mobileValidation(mobile)
-        const {code, expiration} = this.createOtp()
-        if(type === "doctor"){
-            let doc = await this.docRepository.findOneBy({mobile : phoneNumber})
-            if(!doc){
-                doc = this.docRepository.create({
-                    first_name,
-                    last_name,    
-                    mobile : phoneNumber,
-                    otp : code,
-                    expires_in : expiration
-                })
-            }else if(doc?.expires_in > new Date(new Date().getTime())){
-                throw new NotFoundException("otp code not expired")
-            }else if(!doc?.mobile_verify){
-                doc.otp = code
-                doc.expires_in = expiration
-            }else{
-                throw new ConflictException("user already exist")
-            }
-            await this.docRepository.save(doc)
-        }else if(type === "user"){
-            let user = await this.userRepository.findOneBy({mobile : phoneNumber})
-            if(!user || !user.mobile_verify){
-                user = this.userRepository.create({
-                    first_name,
-                    last_name,    
-                    mobile : phoneNumber,
-                    otp : code,
-                    expires_in : expiration
-                })
-                await this.userRepository.save(user)
-            }else{
-                throw new ConflictException("user already exist")
-            }
-        }
-        return {
-            message : "code sent"
-        }
+    return {
+      message: "کد تایید ارسال شد.",
+    };
+  }
+  async sendOtp(OtpDto: SendOtpDto) {
+    const { mobile } = OtpDto;
+    const { phoneNumber } = mobileValidation(mobile);
+    const { code, expiration } = this.createOtp();
+    const date = new Date().getTime();
+    let user = await this.userRepository.findOneBy({ mobile: phoneNumber });
+    if (user) {
+      if (user?.expires_in > new Date(date)) {
+        const remain = new Date(user.expires_in.getTime() - date);
+        let [remainMin, remainSec] = [
+          remain.getUTCMinutes(),
+          remain.getUTCSeconds(),
+        ];
+        const remainTime = `0${remainMin}:${remainSec < 10 ? `0${remainSec}` : remainSec}`;
+        throw new ConflictException({
+          message: "کد تایید منقضی نشده است.",
+          remain_time: remainTime,
+        });
+      }
+      user.otp = code;
+      user.expires_in = expiration;
+      await this.userRepository.save(user);
     }
-    async sendOtp(OtpDto : SendOtpDto, ){
-        const {mobile} = OtpDto
-        const { phoneNumber} = mobileValidation(mobile)
-        const {code, expiration} = this.createOtp()
-        let user = await this.userRepository.findOneBy({mobile : phoneNumber})
-        if(user){
-            if(user?.expires_in > new Date(new Date().getTime())){
-                throw new ConflictException("otp code not expired")
-            }
-            user.otp = code;
-            user.expires_in = expiration
-            await this.userRepository.save(user)
-        }
-        let doc = await this.docRepository.findOneBy({mobile : phoneNumber})
-        if(doc){
-            if(doc?.expires_in > new Date(new Date().getTime())){
-                throw new ConflictException("otp code not expired")
-            }
-            doc.otp = code;
-            doc.expires_in = expiration
-            await this.docRepository.save(doc)
-        }
-        if(!user && !doc){
-            throw new NotFoundException("user not found")
-        }
-        return {
-            message : "code sent"
-        }
+    let doc = await this.docRepository.findOneBy({ mobile: phoneNumber });
+    if (doc) {
+      if (doc?.expires_in > new Date(date)) {
+        const remain = new Date(doc.expires_in.getTime() - date);
+        let [remainMin, remainSec] = [
+          remain.getUTCMinutes(),
+          remain.getUTCSeconds(),
+        ];
+        const remainTime = `0${remainMin}:${remainSec < 10 ? `0${remainSec}` : remainSec}`;
+        throw new ConflictException({
+          message: "کد تایید منقضی نشده است.",
+          remain_time: remainTime,
+        });
+      }
+      doc.otp = code;
+      doc.expires_in = expiration;
+      await this.docRepository.save(doc);
     }
-    async checkOtp(otpDto : CheckOtpDto, type : string){
-        const { mobile , code } = otpDto
-        const { phoneNumber } = mobileValidation(mobile)
-        let profile : object;
-        if(type === "doctor"){
-            profile = await this.docRepository.findOneBy({mobile : phoneNumber})
-        }else{
-            profile = await this.userRepository.findOneBy({mobile : phoneNumber})
-        }
-        const now = new Date()
-        //@ts-ignore
-        if(profile?.expires_in < now ){
-            throw new UnauthorizedException("code is expired")
-        }
-        //@ts-ignore
-        if(!profile || !profile?.otp){
-            throw new NotFoundException("user Not Found")
-        }
-        //@ts-ignore
-        if(profile?.otp !== code){
-            throw new UnauthorizedException("code is not correct")
-        }
-        //@ts-ignore
-        if(!profile?.mobile_verify){
-            if(type === "doctor"){
-                //@ts-ignore
-                await this.userRepository.update({id : profile.id}, {
-                    mobile_verify : true
-                })
-            }
-        }
-        const { accessToken , refreshToken } = this.TokenGenerator({
+    if (!user && !doc) {
+      throw new NotFoundException("کاربر یافت نشد");
+    }
+    return {
+      message: "کد تایید ارسال شد.",
+    };
+  }
+  async checkOtp(otpDto: CheckOtpDto, type: string) {
+    const { mobile, code } = otpDto;
+    const { phoneNumber } = mobileValidation(mobile);
+    let profile: object;
+    if (type === "doctor") {
+      profile = await this.docRepository.findOneBy({ mobile: phoneNumber });
+    } else {
+      profile = await this.userRepository.findOneBy({ mobile: phoneNumber });
+    }
+    const now = new Date();
+    //@ts-ignore
+    if (profile?.expires_in < now) {
+      throw new UnauthorizedException("کد تایید نامعتبر میباشد.");
+    }
+    //@ts-ignore
+    if (!profile || !profile?.otp) {
+      throw new NotFoundException("کاربر یافت نشد.");
+    }
+    //@ts-ignore
+    if (profile?.otp !== code) {
+      throw new UnauthorizedException("کد تایید نامعتبر میباشد.");
+    }
+    //@ts-ignore
+    if (!profile?.mobile_verify) {
+      if (type === "doctor") {
+          await this.docRepository.update(
             //@ts-ignore
-            id : profile?.id , type , mobile : profile?.mobile
-        })
-        return {
-            accessToken,
-            refreshToken,
-            message : "you logged in successfully"
-        }
-    }
-    TokenGenerator(payload : TokenPayload){
-        const accessToken = this.jwtService.sign(payload,{
-            secret : process.env.ACCESS_TOKEN_SECRET,
-            expiresIn : "30d"
-        })
-        const refreshToken = this.jwtService.sign(payload,{
-            secret : process.env.REFRESH_TOKEN_SECRET,
-            expiresIn : "1y"
-        })
-        return {
-            accessToken,
-            refreshToken
-        }
-    }
-    async validateAccessToken(token : string){
-        try {
-            const payload = this.jwtService.verify<TokenPayload>(token,{secret : process.env.ACCESS_TOKEN_SECRET}) 
-            let user : UserEntity;
-            let doctor : DoctorEntity;
-            if(typeof payload == "object" && payload?.id){
-                if(payload.type === "doctor"){
-                    doctor = await this.docRepository.findOneBy({mobile : payload.mobile})
-                }else{
-                    user = await this.userRepository.findOneBy({id : payload.id})
-                }
-                if(!user && !doctor){
-                    throw new UnauthorizedException("login to your account")
-                }
-                return payload
+          { id: profile.id },
+          {
+            mobile_verify: true,
+          }
+        );
+      }else{
+        await this.userRepository.update(
+            //@ts-ignore
+            { id: profile.id },
+            {
+                mobile_verify : true
             }
-            throw new UnauthorizedException("login to your account")
-        } catch (error) {
-            throw new UnauthorizedException(error)
+        )
+      }
+    }
+    const { accessToken, refreshToken } = this.TokenGenerator({
+      //@ts-ignore
+      id: profile?.id, type, mobile: profile?.mobile,
+    });
+    return {
+      accessToken,
+      refreshToken,
+      message: "با موفقیت وارد اکانت خود شدید.",
+    };
+  }
+  TokenGenerator(payload: TokenPayload) {
+    const accessToken = this.jwtService.sign(payload, {
+      secret: process.env.ACCESS_TOKEN_SECRET,
+      expiresIn: "30d",
+    });
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: process.env.REFRESH_TOKEN_SECRET,
+      expiresIn: "1y",
+    });
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+  async validateAccessToken(token: string) {
+    try {
+      const payload = this.jwtService.verify<TokenPayload>(token, {
+        secret: process.env.ACCESS_TOKEN_SECRET,
+      });
+      let user: UserEntity;
+      let doctor: DoctorEntity;
+      if (typeof payload == "object" && payload?.id) {
+        if (payload.type === "doctor") {
+          doctor = await this.docRepository.findOneBy({
+            mobile: payload.mobile,
+          });
+        } else {
+          user = await this.userRepository.findOneBy({ id: payload.id });
         }
-        
-    }
-    async checkUserRole(mobile : string, type : string){
-        let role : string;
-        if(type === "doctor"){
-            const doc = await this.docRepository.findOneBy({mobile})
-            if(doc.status == statusEnum.PENDING || doc.status == statusEnum.REJECTED) throw new UnauthorizedException("حساب شما اجازه دسترسی به این بخش را ندارد")
-            role = doc.role
-        }else{
-            const user = await this.userRepository.findOneBy({mobile})
-            role = user.role
+        if (!user && !doctor) {
+          throw new UnauthorizedException("لطفا وارد اکانت خود شوید.");
         }
-        if(!role) return new UnauthorizedException("user not found")
-        return role
+        return payload;
+      }
+      throw new UnauthorizedException("لطفا وارد اکانت خود شوید.");
+    } catch (error) {
+      throw new UnauthorizedException(error);
     }
-    // async setAdmin(roleData : RoleDto){
-    //     const { role, mobile } = roleData
-    //     const user = await this.userRepository.findOneBy({mobile})
-    //     const doc = await this.docRepository.findOneBy({mobile})
-    //     if(user){
-    //         user.role.push(role) 
-    //         await this.userRepository.save(user)
-    //         return {
-    //             message : `user ${user.first_name} ${user.last_name} with mobile : ${user.mobile} is now ${role}`
-    //         }
-    //     }
-    //     if(doc){
-    //         user.role.push(role) 
-    //         await this.docRepository.save(doc)
-    //         return {
-    //             message : `user ${doc.first_name} ${doc.last_name} with mobile : ${doc.mobile} is now ${role}`
-    //         }
-    //     }
-    // }
-    verifyRefreshToken(refreshToken : RefreshTokenDto){
-        const { RefreshToken } = refreshToken
-        try {
-            const verify = this.jwtService.verify<TokenPayload>(RefreshToken , {secret : process.env.REFRESH_TOKEN_SECRET})
-            if(verify.mobile) {
-                const { type, id, mobile } = verify
-                return this.TokenGenerator({type, id, mobile})
-            }
-            throw new UnauthorizedException("please login your account")
-        } catch (error) {
-            throw new UnauthorizedException("please login your account")
-        }
-        
+  }
+  async checkUserRole(mobile: string, type: string) {
+    let role: string;
+    if (type === "doctor") {
+      const doc = await this.docRepository.findOneBy({ mobile });
+      if (doc.status == statusEnum.PENDING || doc.status == statusEnum.REJECTED)
+        throw new UnauthorizedException(
+          "حساب شما اجازه دسترسی به این بخش را ندارد"
+        );
+      role = doc.role;
+    } else {
+      const user = await this.userRepository.findOneBy({ mobile });
+      role = user.role;
     }
-    async profile(id : number){
-        const user = await this.userRepository.findOne({
-            where : {
-                id
-            },
-            relations : {appointments : true}
-        })
-        if(!user)
-            throw new NotFoundException("پروفایل یافت نشد.")
-        return user
+    if (!role) return new UnauthorizedException("کاربر یافت نشد");
+    return role;
+  }
+  // async setAdmin(roleData : RoleDto){
+  //     const { role, mobile } = roleData
+  //     const user = await this.userRepository.findOneBy({mobile})
+  //     const doc = await this.docRepository.findOneBy({mobile})
+  //     if(user){
+  //         user.role.push(role)
+  //         await this.userRepository.save(user)
+  //         return {
+  //             message : `user ${user.first_name} ${user.last_name} with mobile : ${user.mobile} is now ${role}`
+  //         }
+  //     }
+  //     if(doc){
+  //         user.role.push(role)
+  //         await this.docRepository.save(doc)
+  //         return {
+  //             message : `user ${doc.first_name} ${doc.last_name} with mobile : ${doc.mobile} is now ${role}`
+  //         }
+  //     }
+  // }
+  verifyRefreshToken(refreshToken: RefreshTokenDto) {
+    const { RefreshToken } = refreshToken;
+    try {
+      const verify = this.jwtService.verify<TokenPayload>(RefreshToken, {
+        secret: process.env.REFRESH_TOKEN_SECRET,
+      });
+      if (verify.mobile) {
+        const { type, id, mobile } = verify;
+        return this.TokenGenerator({ type, id, mobile });
+      }
+      throw new UnauthorizedException("لطفا وارد اکانت خود شوید.");
+    } catch (error) {
+      throw new UnauthorizedException("لطفا وارد اکانت خود شوید.");
     }
-    async chargeWallet(id : number, chargeDto : ChargeDto){
-        const { amount } = chargeDto
-        if(+amount <= 5000)
-          throw new ForbiddenException("امکان شاژ کمتر از ۵۰۰۰ تومان ممکن نمیباشد.")
-        const user = await this.userRepository.findOneBy({id})
-        user.wallet += +amount
-        await this.userRepository.save(user)
-        return {message : "حساب شما با موفقیت شارژ شد."}
+  }
+  async profile(id: number, type: string) {
+    let user: UserEntity;
+    let doc: DoctorEntity;
+    if (type === "user") {
+      user = await this.userRepository.findOne({
+        where: {
+          id,
+        },
+        relations: { appointments: true },
+      });
+      return user;
+    } else if (type === "doctor") {
+      doc = await this.docRepository.findOne({
+        where: {
+          id,
+        },
+        relations: { appointments: true },
+      });
+      return doc;
     }
+    throw new NotFoundException("پروفایل یافت نشد.");
+  }
+  async chargeWallet(id: number, type: string, chargeDto: ChargeDto) {
+    if (type === "doctor")
+      throw new UnauthorizedException("این بخش مختص کابران عادی میباشد.");
+    const { amount } = chargeDto;
+    if (+amount <= 5000)
+      throw new ForbiddenException(
+        "امکان شاژ کمتر از ۵۰۰۰ تومان ممکن نمیباشد."
+      );
+    const user = await this.userRepository.findOneBy({ id });
+    user.wallet += +amount;
+    await this.userRepository.save(user);
+    return { message: "حساب شما با موفقیت شارژ شد." };
+  }
 }

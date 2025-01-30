@@ -22,10 +22,10 @@ export class FindUserDto {
   mobile: string;
 }
 export class CreateUserDto {
-  @ApiProperty()
+  @ApiProperty({example : "Name"})
   @IsString()
   first_name: string;
-  @ApiProperty()
+  @ApiProperty({example : "Last-Name"})
   @IsString()
   last_name: string;
   @ApiProperty({ example: "09100000000" })
@@ -33,7 +33,7 @@ export class CreateUserDto {
   mobile: string;
 }
 export class UpdateUserDto extends PartialType(CreateUserDto) {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: "09100000000" })
   @IsOptional()
   @Transform(({ value }) => (value === "" ? null : value))
   @IsMobilePhone("fa-IR", {}, { message: "شماره تلفن نادرست میباشد." })
