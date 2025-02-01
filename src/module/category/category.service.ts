@@ -18,8 +18,9 @@ export class CategoryService {
     let destination : string;
     const category = await this.categoryRepository.findOneBy({slug})
     
-    if(category) throw new ConflictException("category already exists")
-    if(image){
+    if(category) 
+      throw new ConflictException("category already exists")
+    if(image.length > 0){
       const { Location } = await this.s3service.uploadFile(image[0],"Doctors")
       destination = Location
     }

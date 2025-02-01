@@ -1,4 +1,6 @@
 import { EntityName } from "src/common/enums/entities.enum";
+import { ClinicEntity } from "src/module/clinic/entity/clinic.entity";
+import { DoctorEntity } from "src/module/doctors/entities/doctor.entity";
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity(EntityName.Categories)
@@ -21,4 +23,8 @@ export class CategoryEntity {
     parent : CategoryEntity
     @OneToMany(()=> CategoryEntity , category => category.parent)
     children : CategoryEntity[]
+    @OneToMany(()=> DoctorEntity , doc => doc.category)
+    doctors : DoctorEntity[]
+    @OneToMany(()=> ClinicEntity , clinic => clinic.category)
+    Clinics : ClinicEntity[]
 }
