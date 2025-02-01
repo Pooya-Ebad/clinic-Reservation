@@ -11,6 +11,7 @@ import { categoryEnum } from "src/common/enums/category.enum";
 import { statusEnum } from "src/common/enums/status.enum";
 import { DoctorEntity } from "src/module/doctors/entities/doctor.entity";
 import { ClinicDocumentEntity } from "./Document.entity";
+import { CategoryEntity } from "src/module/category/entities/category.entity";
 
 @Entity("clinic")
 export class ClinicEntity {
@@ -18,8 +19,8 @@ export class ClinicEntity {
   id: number;
   @Column()
   name: string;
-  @Column({type : "enum" ,enum: categoryEnum})
-  category: string;
+  @Column()
+  categoryId: Number;
   @Column({unique: true})
   slug: string;
   @Column({type: "enum", enum: statusEnum, default: statusEnum.PENDING})
@@ -49,6 +50,9 @@ export class ClinicEntity {
   @OneToOne(() => ClinicDocumentEntity, (doc) => doc.clinic)
   @JoinColumn()
   documents: ClinicDocumentEntity;
+  @OneToOne(() => CategoryEntity, (category) => category.Clinics)
+  @JoinColumn()
+  category : CategoryEntity;
   @CreateDateColumn()
   created_at: Date;
 }

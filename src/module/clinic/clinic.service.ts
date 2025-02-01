@@ -34,7 +34,7 @@ export class clinicService {
     await this.clinicRepository.insert({
         name,
         slug : slugify(name),
-        category,
+        categoryId : categoryExists.id,
         manager_mobile : doc.mobile,
         manager_name : `${doc.first_name} ${doc.last_name}`,
         address,
