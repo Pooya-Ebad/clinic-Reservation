@@ -67,7 +67,7 @@ export class UsersController {
     @Query() paginationDto: PaginationDto,
     @Query() searchDto: UserSearchDto
   ) {
-    return this.usersService.find(paginationDto, searchDto);
+    return this.usersService.findUsers(paginationDto, searchDto);
   }
 
   @Roles([role.ADMIN])

@@ -22,22 +22,12 @@ export class UsersService {
     private appointmentRepository: Repository<AppointmentEntity>,
     private readonly doctorService: DoctorsService
   ) {}
-  async find(paginationDto: PaginationDto, searchDto: UserSearchDto) {
+  async findUsers(paginationDto: PaginationDto, searchDto: UserSearchDto) {
     const { search, mobile, from_date, to_date } = searchDto;
     const { page, limit, skip } = pagination(paginationDto);
-    let where: FindOptionsWhere<UserEntity>[] = [];
-    if (search && search.length >= 3) {
-      where = [
-        { first_name: ILike(`%${search}%`) },
-        { last_name: ILike(`%${search}%`) },
-      ];
-    } else if (search && search.length < 3) {
-      throw new BadRequestException(
-        "تعداد کاراکتر های سرچ نمیتواند کمتر از ۳ کاراکتر باشد."
-      );
-    }
+    const query = this.userRepository.createQueryBuilder("users");
     if (mobile) {
-      where.push({ mobile });
+      query.where("users.mobile = :mobile", { mobile });
     }
     if (
       to_date &&
@@ -47,24 +37,33 @@ export class UsersService {
     ) {
       let from = new Date(new Date(from_date).setUTCHours(0, 0, 0));
       let to = new Date(new Date(to_date).setUTCHours(0, 0, 0));
-      where.push({ created_at: Between(from, to) });
+      query.andWhere("users.created_at BETWEEN :from AND :to", { from, to });
     } else if (from_date && isDate(new Date(from_date))) {
       let from = new Date(new Date(from_date).setUTCHours(0, 0, 0));
-      where.push({ created_at: MoreThanOrEqual(from) });
+      query.andWhere("users.created_at >= :from", { from });
     } else if (to_date && isDate(new Date(to_date))) {
       let to = new Date(new Date(to_date).setUTCHours(0, 0, 0));
-      where.push({ created_at: LessThanOrEqual(to) });
+      query.andWhere("users.created_at <= :to", { to });
     }
-    const [user, count] = await this.userRepository.findAndCount({
-      where,
-      take: limit,
-      skip,
-      order: { created_at: "DESC" },
-    });
-    if (user.length == 0) throw new NotFoundException("نتیحه ای یافت نشد.");
+    if (search && search.length >= 3) {
+      query.andWhere(
+        "users.first_name LIKE :search OR users.last_name LIKE :search",
+        { search: `%${search}%` }
+      );
+    } else if (search && search.length < 3) {
+      throw new BadRequestException(
+        "تعداد کاراکتر های سرچ نمیتواند کمتر از ۳ کاراکتر باشد."
+      );
+    }
+    query.take(limit);
+    query.skip(skip);
+    query.orderBy("users.created_at", "DESC");
+    const [users, count] = await query.getManyAndCount();
+
+    if (users.length == 0) throw new NotFoundException("نتیحه ای یافت نشد.");
     return {
       pagination: PaginationGenerator(page, limit, count),
-      user,
+      users,
     };
   }
 
@@ -127,11 +126,10 @@ export class UsersService {
     if (!detail) throw new NotFoundException("این زمانبندی وجود ندارد.");
     if (
       docAppointment.find(
-        (appointment) => (
-          appointment.Visit_Date === date &&
-          appointment.status === AppointmentStatusEnum.reserved ||
+        (appointment) =>
+          (appointment.Visit_Date === date &&
+            appointment.status === AppointmentStatusEnum.reserved) ||
           appointment.status === AppointmentStatusEnum.done
-        ) 
       )
     )
       throw new ConflictException("این نوبت ویزیت قبلا رزو شده است.");
@@ -183,7 +181,8 @@ export class UsersService {
       const [targetDate] = date.split(" ");
       if (
         nowDate == targetDate &&
-        new Date().setHours(+hour, +min, 0, 0) < new Date().setHours(+currentHour, +currentMin, 0, 0)
+        new Date().setHours(+hour, +min, 0, 0) <
+          new Date().setHours(+currentHour, +currentMin, 0, 0)
       )
         throw new ConflictException("تاریخ این ویزیت گذشته است.");
 
@@ -192,7 +191,7 @@ export class UsersService {
         userId: user_id,
         Visit_Date: date,
         price: detail.price,
-      })
+      });
       return {
         message:
           ".نوبت با موفقیت رزرو شد. شما میتوانید با مراجعه به بخش پرداخت نسبت به نهایی کردن ویزیت خود اقدام کنید",
@@ -215,12 +214,12 @@ export class UsersService {
     return appointment;
   }
 
-  async payment(getAppointmentDto : GetAppointmentDto) {
-    const { appointment_id, user_id } = getAppointmentDto
+  async payment(getAppointmentDto: GetAppointmentDto) {
+    const { appointment_id, user_id } = getAppointmentDto;
     const [appointment, user] = await Promise.all([
       this.findAppointment(appointment_id),
-      this.checkExistUserById(user_id)
-    ])
+      this.checkExistUserById(user_id),
+    ]);
     if (appointment.status !== AppointmentStatusEnum.pending)
       throw new ConflictException("امکان پرداخت برای این ویزیت ممکن نمیباشد.");
     if (appointment.userId != user_id)
@@ -228,11 +227,11 @@ export class UsersService {
     appointment.payment = true;
     appointment.payment_date = new Date();
     appointment.status = AppointmentStatusEnum.reserved;
-    user.wallet -= +appointment.price
+    user.wallet -= +appointment.price;
     await Promise.all([
       this.appointmentRepository.save(appointment),
-      this.userRepository.save(user)
-    ])
+      this.userRepository.save(user),
+    ]);
     return { message: "پرداخت با موفقیت انجام شد." };
   }
   async cancelAppointment(cancelDto: GetAppointmentDto) {
