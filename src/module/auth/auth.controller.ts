@@ -15,7 +15,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   @Post("signup")
-  @ApiOperation({ summary: "signup for users" })
+  @ApiOperation({ summary: "users signup section" })
   @ApiResponse({
     status: 201,
     description: "after sending verification code successfully",
@@ -23,13 +23,22 @@ export class AuthController {
       message: "کد تایید ارسال شد.",
     },
   })
+  @ApiResponse({
+    status: 409,
+    description: "if the user is already registered",
+    example: {
+      "message": ".با این شماره تلفن قبلا ثبت نام کرده اید",
+      "error": "Conflict",
+      "statusCode": 409
+    }
+  })
   signup(@Body() otpDto: CreateOtpDto) {
     return this.authService.signup(otpDto, "user");
   }
 
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   @Post("login")
-  @ApiOperation({ summary: "login and sending otp code" })
+  @ApiOperation({ summary: "login users and sending otp code" })
   @ApiResponse({
     status: 201,
     description: "after sending verification code successfully",
@@ -54,7 +63,7 @@ export class AuthController {
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   @ApiResponse({
     status: 201,
-    description: "if the login is successful",
+    description: "if the login was successful",
     example: {
       accessToken:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NiwidHlwZSI6InVzZXIiLCJtb2JpbGUiOiIwOTEwMDAwMDAwMCIsImlhdCI6MTczODI0ODIwOCwiZXhwIjoxNzQwODQwMjA4fQ.cgMZjsMXI-xQY8Hh-rj6PZNleTvBhfhmouMhFuI9ftA",

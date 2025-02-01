@@ -55,7 +55,9 @@ export class AuthService {
         doc.expires_in = expiration;
       } else {
         throw new ConflictException(".با این شماره تلفن قبلا ثبت نام کرده اید");
-      }
+      } 
+      doc.first_name = first_name
+      doc.last_name = last_name
       await this.docRepository.save(doc);
     } else if (type === "user") {
       let user = await this.userRepository.findOneBy({ mobile: phoneNumber });
@@ -84,6 +86,8 @@ export class AuthService {
       } else {
         throw new ConflictException(".با این شماره تلفن قبلا ثبت نام کرده اید");
       }
+      user.first_name = first_name
+      user.last_name = last_name
       await this.userRepository.save(user);
     }
     return {
