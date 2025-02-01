@@ -12,22 +12,22 @@ export class CreateDoctorDto {
     @IsEnum(categoryEnum)
     @IsString()
     category : string
-    @ApiProperty()
+    @ApiProperty({example : 12345})
     @IsString() 
-    @Length(5,5, {message : "Medical License number must be between 5 to 5"})
+    @Length(5,5, {message : "کد نظام پزشکی اشتباه است (حداقل و حداکثر ۵ رقم)"})
     Medical_License_number : string
     @ApiProperty({format : "binary"})
     image : string
-    @ApiProperty()
+    @ApiProperty({example: 1000000000})
     @IsString()
-    @Length(10,10, {message : "national code must be between 10 to 10"})
+    @Length(10,10, {message : "کد ملی اشتباه است (حداقل و حداکثر ۱۰ رقم)"})
     national_code : string
     @ApiProperty()
     @IsString()
     description : string
-    @ApiProperty()
+    @ApiProperty({example : 12345})
     @IsString()
-    @Length(5,5, {message : "code format not correct"})
+    @Length(5,5, {message : "کد تایید اشتباه میباشد (حداقل و حداکثر ۵ رقم)"})
     otp_code : string
 }
 export class DoctorConformationDto {
@@ -50,14 +50,30 @@ export class ScheduleDto {
     @ApiProperty({enum : WeekDays})
     @IsEnum(WeekDays)
     Day : string
-    @ApiProperty({example : "00:00"})
+    @ApiProperty({example : "00:00", description : "the input format must be in 24-hour format: 00:00"})
     @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
         message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
     })
     Visit_Time : string
-    @ApiProperty()
+    @ApiProperty({example : "30000", description : "price must be more than 30000 Toman"})
     price : string
 }
+export class DoctorSearchDto {
+    @ApiPropertyOptional({ description: "At least 3 characters are required" })
+    search: string;
+    @ApiPropertyOptional({ example: "09100000000" })
+    @IsOptional()
+    @IsMobilePhone("fa-IR", {}, { message: "شماره تلفن نادرست میباشد." })
+    mobile: string;
+    @ApiPropertyOptional({enum : statusEnum})
+    @IsOptional()
+    @IsEnum(statusEnum)
+    status : string
+    @ApiPropertyOptional({ description: "in 2025-01-28 18:11:42.000000 format" })
+    to_date: string;
+    @ApiPropertyOptional({ description: "in 2025-01-28 18:11:42.000000 format" })
+    from_date: string;
+  }
 export class AvailabilityDto {
     @ApiProperty({enum : AvailabilityEnum})
     Availability : string
@@ -73,19 +89,19 @@ export class UpdateScheduleDto {
     @ApiProperty({enum : WeekDays})
     @IsEnum(WeekDays)
     Day : string
-    @ApiProperty({example : "00:00"})
+    @ApiProperty({example : "00:00", description : "the input format must be in 24-hour format: 00:00"})
     @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
         message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
     }) 
     Visit_Time : string
-    @ApiPropertyOptional({example : "00:00", nullable : true})
+    @ApiPropertyOptional({example : "00:00", description : "the input format must be in 24-hour format: 00:00", nullable : true})
     @Transform(({ value }) => (value === '' ? null : value))
     @IsOptional()
     @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
         message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
     })
     New_Visit_Time : string
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({example : "30000", description : "price must be more than 30000 Toman"})
     New_Price : string
 }
 export class DeleteScheduleDto {
@@ -94,7 +110,7 @@ export class DeleteScheduleDto {
     @ApiProperty({enum : WeekDays})
     @IsEnum(WeekDays)
     Day : string
-    @ApiProperty({example : "00:00"})
+    @ApiProperty({example : "00:00", description : "the input format must be in 24-hour format: 00:00"})
     @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
         message: 'زمان باید به فرمت ۲۴ ساعته باشد )00:00)',
     }) 

@@ -1,9 +1,9 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, FindOptionDto, ScheduleDto, UpdateScheduleDto } from './dto/doctor.dto';
+import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, DoctorSearchDto, FindOptionDto, ScheduleDto, UpdateScheduleDto } from './dto/doctor.dto';
 import { UpdateDoctorDto } from './dto/update.doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DoctorEntity } from './entities/doctor.entity';
-import { FindOptionsWhere, Like, Repository } from 'typeorm';
+import { Between, FindOptionsWhere, ILike, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
 import { S3Service } from '../S3/S3.service';
 import { role } from 'src/common/enums/role.enum';
 import { AuthService } from '../auth/auth.service';
@@ -12,9 +12,11 @@ import { mobileValidation } from 'src/common/utility/mobile.utils';
 import { statusEnum } from 'src/common/enums/status.enum';
 import { ClinicDisQualificationDto } from '../clinic/dto/clinic.dto';
 import { ScheduleEntity } from './entities/schedule.entity';
-import { checkTime, toBoolean } from 'src/common/utility/function.utils';
+import { checkTime, pagination, PaginationGenerator, toBoolean } from 'src/common/utility/function.utils';
 import { AvailabilityEnum } from 'src/common/enums/availabilityEnum';
 import { findOptionsEnum } from 'src/common/enums/findOption.enum';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { isDate } from 'class-validator';
 
 @Injectable()
 export class DoctorsService {
@@ -52,12 +54,12 @@ export class DoctorsService {
       const { Location } = await this.s3Service.uploadFile(image[0],"Doctors")
       await this.doctorRepository.update({mobile : phoneNumber},{
         description,
-        category : categoryExist.slug,
-         image : Location,
-         Medical_License_number, 
-         national_code, 
-         role : role.DOCTOR,
-         mobile_verify : true
+        categoryId : categoryExist.id,
+        image : Location,
+        Medical_License_number, 
+        national_code, 
+        role : role.DOCTOR,
+        mobile_verify : true
        })
     }else throw new UnauthorizedException("پزشک یافت نشد")
     return {
@@ -68,9 +70,52 @@ export class DoctorsService {
 
   }
   
-  async findAll() {
-    return await this.doctorRepository.find({})
-  }
+  async findDoctors(paginationDto: PaginationDto, searchDto: DoctorSearchDto) {
+      const { search, mobile, status, from_date, to_date } = searchDto;
+      const { page, limit, skip } = pagination(paginationDto);
+      const query = this.doctorRepository.createQueryBuilder('doctors')
+      
+      if (mobile) {
+        query.where('doctors.mobile = :mobile', {mobile})
+      }
+      if (status){
+        query.andWhere('doctors.status = :status',{status})
+      }
+      if (
+        to_date &&
+        from_date &&
+        isDate(new Date(from_date)) &&
+        isDate(new Date(to_date))
+      ) {
+        let from = new Date(new Date(from_date).setUTCHours(0, 0, 0));
+        let to = new Date(new Date(to_date).setUTCHours(0, 0, 0));
+        query.andWhere('doctors.created_at BETWEEN :from AND :to', {from, to})
+      } else if (from_date && isDate(new Date(from_date))) {
+        let from = new Date(new Date(from_date).setUTCHours(0, 0, 0));
+        query.andWhere('doctors.created_at >= :from', {from})
+      } else if (to_date && isDate(new Date(to_date))) {
+        let to = new Date(new Date(to_date).setUTCHours(0, 0, 0));
+        query.andWhere('doctors.created_at <= :to', {to})
+      }
+      if (search && search.length >= 3) {
+        query.andWhere('doctors.first_name LIKE :search OR doctors.last_name LIKE :search', {search : `%${search}%`})
+    } else if (search && search.length < 3) {
+      throw new BadRequestException(
+        "تعداد کاراکتر های سرچ نمیتواند کمتر از ۳ کاراکتر باشد."
+      );
+    }
+      query.take(limit)
+      query.skip(skip)
+      query.orderBy('doctors.created_at','DESC')
+      const [doctors, count] = await query.getManyAndCount()
+      if (doctors.length == 0)
+        throw new NotFoundException("نتیحه ای یافت نشد.");
+      return {
+        pagination: PaginationGenerator(page, limit, count),
+        doctors,
+      };
+    }
+
   async findOneBy(findOption: FindOptionDto) {
     const { Find_Option, Value } = findOption
     let where : FindOptionsWhere<DoctorEntity> = {};
@@ -104,18 +149,18 @@ export class DoctorsService {
     await this.doctorRepository.update({Medical_License_number : medical_license},{
       ...updateData
     })
-    return {message : "doctor profile updated"} 
+    return {message : "پروفایل پزشک با موفقیت آپدیت شد"} 
   }
 
   async remove(medical_license: string) {
     await this.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :medical_license})
     await this.doctorRepository.delete({Medical_License_number : medical_license})
-    return {message : "doctor deleted successfully"}
+    return {message : "پزشک با موفقیت حذف شد"}
   }
   async register(medical_license : string ,doctorConformationDto : DoctorConformationDto){
     const { status , message} = doctorConformationDto
     if(status === statusEnum.REJECTED && !message){
-      throw new BadRequestException("برای رد کردن توضیحات نمیتواند خالی باشد.")
+      throw new BadRequestException("برای رد کردن, توضیحات نمیتواند خالی باشد.")
     }
     let doctor = await this.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :medical_license})
     doctor.status = status
@@ -144,7 +189,7 @@ export class DoctorsService {
   async SetSchedule(id : number, scheduleDto : ScheduleDto){
     const { Day, Visit_Time, price } = scheduleDto
     if(+price < 30000)
-      throw new ForbiddenException("حداقل مبلغ قاببل قبول ۳۰۰۰۰ تومان میباشد.")
+      throw new BadRequestException("حداقل مبلغ قاببل قبول ۳۰۰۰۰ تومان میباشد.")
     await this.findOneBy({Find_Option : findOptionsEnum.Id, Value : id.toString()})
     const schedule = await this.scheduleRepository.findOne({
       where : {
@@ -202,6 +247,8 @@ export class DoctorsService {
         details
       } as any
     })
+    if(schedule.length === 0)
+      throw new NotFoundException("برای این پزشک هیچ زمانبندی یافت نشد")
     return schedule
   }
   async getAppointment(id : number){
@@ -217,7 +264,7 @@ export class DoctorsService {
   async updateSchedule(docId : number, updateSchedule : UpdateScheduleDto){
     let { Day, Visit_Time, New_Visit_Time, New_Price} = updateSchedule
     if(New_Price && +New_Price < 30000)
-      throw new ForbiddenException("حداقل مبلغ قاببل قبول ۳۰۰۰۰ تومان میباشد.")
+      throw new BadRequestException("حداقل مبلغ قاببل قبول ۳۰۰۰۰ تومان میباشد.")
     let docSchedule = await this.getSchedule(docId)
     const schedule = await this.scheduleRepository.findOne({
         where : {

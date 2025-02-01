@@ -6,6 +6,7 @@ import { ClinicEntity } from "src/module/clinic/entity/clinic.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { ScheduleEntity } from "./schedule.entity";
 import { AppointmentEntity } from "src/module/users/entities/appointment.entity";
+import { CategoryEntity } from "src/module/category/entities/category.entity";
 
 @Entity(EntityName.Doc)
 export class DoctorEntity {
@@ -20,7 +21,7 @@ export class DoctorEntity {
     @Column({default : false})
     mobile_verify : boolean
     @Column({nullable : true})
-    category : string
+    categoryId : number
     @Column({unique : true,nullable : true})
     Medical_License_number : string
     @Column({unique : true,nullable : true})
@@ -57,4 +58,7 @@ export class DoctorEntity {
     clinic : ClinicEntity
     @OneToMany(()=> AppointmentEntity, (appointment)=>appointment.doctor)
     appointments : AppointmentEntity[]
+    @OneToOne(() => CategoryEntity, (category) => category.doctors)
+    @JoinColumn()
+    category : CategoryEntity;
 } 
