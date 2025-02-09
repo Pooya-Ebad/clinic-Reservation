@@ -15,7 +15,16 @@ import { ScheduleEntity } from './entities/schedule.entity';
 import { AppointmentEntity } from '../users/entities/appointment.entity';
 
 @Module({
-  imports : [TypeOrmModule.forFeature([DoctorEntity, UserEntity , DoctorEntity, CategoryEntity, ScheduleEntity, AppointmentEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      DoctorEntity,
+      UserEntity,
+      DoctorEntity,
+      CategoryEntity,
+      ScheduleEntity,
+      AppointmentEntity,
+    ]),
+  ],
   controllers: [DoctorsController],
   providers: [
     DoctorsService,
@@ -24,10 +33,9 @@ import { AppointmentEntity } from '../users/entities/appointment.entity';
     JwtService,
     S3Service,
     UsersService,
-    CategoryService
+    CategoryService,
   ],
-  exports : [DoctorsService]
-  
+  exports: [DoctorsService],
 })
 export class DoctorsModule {}
  
