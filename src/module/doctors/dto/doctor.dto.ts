@@ -69,6 +69,10 @@ export class DoctorSearchDto {
     @IsOptional()
     @IsEnum(statusEnum)
     status : string
+    @ApiPropertyOptional({enum : AvailabilityEnum})
+    @IsOptional()
+    @IsEnum(AvailabilityEnum)
+    availability : string
     @ApiPropertyOptional({ description: "in 2025-01-28 18:11:42.000000 format" })
     to_date: string;
     @ApiPropertyOptional({ description: "in 2025-01-28 18:11:42.000000 format" })
