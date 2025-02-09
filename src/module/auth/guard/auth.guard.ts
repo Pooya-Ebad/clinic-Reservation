@@ -12,15 +12,15 @@ export class AuthGuard implements CanActivate {
     private reflector: Reflector
   ) {}
   async canActivate(context: ExecutionContext) {
-    const httpRequest = context.switchToHttp();
-    const request: Request = httpRequest.getRequest<Request>();
-    const token = this.extractToken(request);
-    request.user = await this.authService.validateAccessToken(token);
     const requiredRole: string[] = this.reflector.get(
       ROLE_KEY,
       context.getHandler()
     );
     if (requiredRole && requiredRole.length > 0) {
+      const httpRequest = context.switchToHttp();
+      const request: Request = httpRequest.getRequest<Request>();
+      const token = this.extractToken(request);
+      request.user = await this.authService.validateAccessToken(token);
       const userRole = await this.authService.checkUserRole(
         request.user.mobile,
         request.user.type
