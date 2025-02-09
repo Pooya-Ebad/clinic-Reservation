@@ -22,6 +22,7 @@ export class UsersService {
     private appointmentRepository: Repository<AppointmentEntity>,
     private readonly doctorService: DoctorsService
   ) {}
+  
   async findUsers(paginationDto: PaginationDto, searchDto: UserSearchDto) {
     const { search, mobile, from_date, to_date } = searchDto;
     const { page, limit, skip } = pagination(paginationDto);
@@ -90,6 +91,7 @@ export class UsersService {
       throw new BadRequestException("مشکلی در هنگام حذف کاربر پیش آمد.");
     return { message: "کاربر با موفقیت حذف شد." };
   }
+
   async checkExistUser(mobile: string) {
     const user = await this.userRepository.findOne({ where: { mobile } });
     if (!user) {
@@ -97,6 +99,7 @@ export class UsersService {
     }
     return user;
   }
+
   async checkExistUserById(id: number) {
     const user = await this.userRepository.findOne({
       where: { id },
@@ -107,6 +110,7 @@ export class UsersService {
     }
     return user;
   }
+
   async setAppointment(appointmentDto: AppointmentDto) {
     const { doctor_id, user_id, visit_day, visit_time } = appointmentDto;
     let date: string;
@@ -117,6 +121,37 @@ export class UsersService {
       this.doctorService.getSchedule(doctor_id),
       this.doctorService.getAppointment(doctor_id),
     ]);
+    switch (visit_day) {
+      case WeekDays.Saturday:
+        day = 6;
+        break;
+      case WeekDays.Sunday:
+        day = 7;
+        break;
+      case WeekDays.Monday:
+        day = 1;
+        break;
+      case WeekDays.Tuesday:
+        day = 2;
+        break;
+      case WeekDays.Wednesday:
+        day = 3;
+        break;
+      case WeekDays.Thursday:
+        day = 4;
+        break;
+      case WeekDays.Friday:
+        day = 5;
+        break;
+    }
+    const dayDifference = (day - new Date().getDay() + 7) % 7;
+    const visit = moment();
+    visit.add("days", dayDifference);
+    visit.set("hour", hour);
+    visit.set("minute", min);
+    visit.set("second", 0);
+    visit.set("millisecond", 0);
+    date = visit.format("jYYYY/jMM/jDD HH:mm");
     const scheduleData = schedule.find(
       (schedule) => schedule.day === visit_day
     );
@@ -124,14 +159,14 @@ export class UsersService {
       return schedule.visitTime == visit_time;
     });
     if (!detail) throw new NotFoundException("این زمانبندی وجود ندارد.");
-    if (
-      docAppointment.find(
-        (appointment) =>
-          (appointment.Visit_Date === date &&
-            appointment.status === AppointmentStatusEnum.reserved) ||
-          appointment.status === AppointmentStatusEnum.done
-      )
+    const appointment = docAppointment?.find(
+      (appointment) =>  
+        (appointment.Visit_Date == date &&
+          appointment.status === AppointmentStatusEnum.reserved) ||
+        appointment.status === AppointmentStatusEnum.done
+     
     )
+    if (appointment)
       throw new ConflictException("این نوبت ویزیت قبلا رزو شده است.");
     if (
       user.appointments.find((appointment) => appointment.Visit_Date === date)
@@ -147,42 +182,10 @@ export class UsersService {
       scheduleData &&
       scheduleData.details.some((detail) => detail.visitTime === visit_time)
     ) {
-      switch (visit_day) {
-        case WeekDays.Saturday:
-          day = 6;
-          break;
-        case WeekDays.Sunday:
-          day = 7;
-          break;
-        case WeekDays.Monday:
-          day = 1;
-          break;
-        case WeekDays.Tuesday:
-          day = 2;
-          break;
-        case WeekDays.Wednesday:
-          day = 3;
-          break;
-        case WeekDays.Thursday:
-          day = 4;
-          break;
-        case WeekDays.Friday:
-          day = 5;
-          break;
-      }
-      const dayDifference = (day - new Date().getDay() + 7) % 7;
-      const visit = moment();
-      visit.add("days", dayDifference);
-      visit.set("hour", hour);
-      visit.set("minute", min);
-      visit.set("second", 0);
-      visit.set("millisecond", 0);
-      date = visit.format("jYYYY/jMM/jDD HH:mm");
       const [targetDate] = date.split(" ");
       if (
         nowDate == targetDate &&
-        new Date().setHours(+hour, +min, 0, 0) <
-          new Date().setHours(+currentHour, +currentMin, 0, 0)
+        new Date().setHours(+hour, +min, 0, 0) < new Date().setHours(+currentHour, +currentMin, 0, 0)
       )
         throw new ConflictException("تاریخ این ویزیت گذشته است.");
 
@@ -201,6 +204,7 @@ export class UsersService {
       message: "تاریخ ویزیت معتبر نمیباشد.",
     };
   }
+
   async getAppointment(mobile: string) {
     let user = await this.userRepository.findOne({
       where: { mobile },
@@ -234,13 +238,13 @@ export class UsersService {
     ]);
     return { message: "پرداخت با موفقیت انجام شد." };
   }
+
   async cancelAppointment(cancelDto: GetAppointmentDto) {
     const { appointment_id, user_id } = cancelDto;
     let confirmation = false;
     let appointment: AppointmentEntity;
     const user = await this.checkExistUserById(user_id);
     const userAppointment = await this.getAppointment(user.mobile);
-    console.log(userAppointment);
     for (const value of userAppointment) {
       if (value.id == appointment_id) {
         confirmation = true;
@@ -269,4 +273,5 @@ export class UsersService {
         "نوبت ویزیت با موفقیت کنسل شد و هزینه آن به کیف پول شما عودت داده شد.",
     };
   }
+
 }
