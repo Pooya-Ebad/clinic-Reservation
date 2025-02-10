@@ -13,13 +13,13 @@ import { CategoryService } from '../category/category.service';
 import { CategoryEntity } from '../category/entities/category.entity';
 import { ScheduleEntity } from './entities/schedule.entity';
 import { AppointmentEntity } from '../users/entities/appointment.entity';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       DoctorEntity,
       UserEntity,
-      DoctorEntity,
       CategoryEntity,
       ScheduleEntity,
       AppointmentEntity,

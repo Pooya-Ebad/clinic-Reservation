@@ -9,7 +9,7 @@ import { role } from 'src/common/enums/role.enum';
 import { AuthService } from '../auth/auth.service';
 import { CategoryService } from '../category/category.service';
 import { mobileValidation } from 'src/common/utility/mobile.utils';
-import { statusEnum } from 'src/common/enums/status.enum';
+import { AppointmentStatusEnum, statusEnum } from 'src/common/enums/status.enum';
 import { ClinicDisQualificationDto } from '../clinic/dto/clinic.dto';
 import { ScheduleEntity } from './entities/schedule.entity';
 import { checkTime, pagination, PaginationGenerator } from 'src/common/utility/function.utils';
@@ -17,6 +17,7 @@ import { AvailabilityEnum } from 'src/common/enums/availabilityEnum';
 import { findOptionsEnum } from 'src/common/enums/findOption.enum';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { isDate } from 'class-validator';
+import { AppointmentEntity } from '../users/entities/appointment.entity';
 
 @Injectable()
 export class DoctorsService {
@@ -25,6 +26,8 @@ export class DoctorsService {
     private doctorRepository: Repository<DoctorEntity>,
     @InjectRepository(ScheduleEntity)
     private scheduleRepository: Repository<ScheduleEntity>,
+    @InjectRepository(AppointmentEntity)
+    private appointmentRepository: Repository<AppointmentEntity>,
     private s3Service: S3Service,
     private authService: AuthService,
     private categoryService: CategoryService
@@ -415,4 +418,16 @@ export class DoctorsService {
     return { message: "زمانبدی مورد نظر با مفقیت پاک شد." };
   }
 
+  async doneAppointment(appointment_id: number){
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id: appointment_id },
+    });
+    if (!appointment) 
+      throw new NotFoundException("ویزیت یافت نشد.");
+    if (appointment.status === AppointmentStatusEnum.done)
+      throw new ConflictException("این ویزیت قبلا انجام شده است.");
+    appointment.status = AppointmentStatusEnum.done;
+    await this.appointmentRepository.save(appointment);
+    return { message: "ویزیت با موفقیت انجام شد." };
+  }
 } 

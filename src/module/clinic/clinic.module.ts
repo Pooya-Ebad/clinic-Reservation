@@ -14,10 +14,29 @@ import { UserEntity } from "../users/entities/user.entity";
 import { JwtService } from "@nestjs/jwt";
 import { AuthGuard } from "../auth/guard/auth.guard";
 import { ScheduleEntity } from "../doctors/entities/schedule.entity";
+import { AppointmentEntity } from "../users/entities/appointment.entity";
 
 @Module({
-    imports : [TypeOrmModule.forFeature([ClinicEntity,CategoryEntity,ClinicDocumentEntity,DoctorEntity,UserEntity,ScheduleEntity])],
-    controllers : [clinicController],
-    providers : [clinicService, S3Service, DoctorsService,AuthService,CategoryService,JwtService,AuthGuard]
+  imports: [
+    TypeOrmModule.forFeature([
+      ClinicEntity,
+      CategoryEntity,
+      ClinicDocumentEntity,
+      DoctorEntity,
+      UserEntity,
+      ScheduleEntity,
+      AppointmentEntity
+    ]),
+  ],
+  controllers: [clinicController],
+  providers: [
+    clinicService,
+    S3Service,
+    DoctorsService,
+    AuthService,
+    CategoryService,
+    JwtService,
+    AuthGuard,
+  ],
 })
-export class clinicModule{}
+export class clinicModule {}

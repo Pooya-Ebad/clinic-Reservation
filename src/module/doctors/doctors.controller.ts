@@ -16,7 +16,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @ApiBearerAuth("Authorization")
 @Controller("doctors")
-@UseGuards(AuthGuard)
+// @UseGuards(AuthGuard)
 @ApiTags("Doctors")
 export class DoctorsController {
   constructor(
@@ -362,6 +362,31 @@ export class DoctorsController {
     return this.doctorsService.setAvailability(medical_license, Availability);
   }
 
+  @Roles([role.ADMIN])
+  @Patch("set-appointment-done:appointment_id")
+  @ApiOperation({summary : "after a successful visit, this API can be used to complete the visit"})
+  @ApiResponse({
+    status : 200,
+    description: "if operation was successful",
+    example : {
+      "message": "ویزیت با موفقیت انجام شد."
+    }
+  })
+  @ApiResponse({
+    status : 404,
+    description : "if no visit was found",
+    example : {
+      "message": "ویزیت یافت نشد.",
+      "error": "Not Found",
+      "statusCode": 404
+    }
+  })
+  doneAppointment(
+    @Param('appointment_id') Appointment_ID : string
+  ){
+    return this.doctorsService.doneAppointment(+Appointment_ID)
+  }
+  
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   @Roles([role.ADMIN])
   @Patch("update/Schedule:docId")
