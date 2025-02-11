@@ -5,8 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { CategoryEntity } from './entities/category.entity';
 import { Repository } from 'typeorm';
 import { S3Service } from '../S3/S3.service';
-import { categoryJson, isBoolean, toBoolean } from 'src/common/utility/function.utils';
-import { access } from 'fs/promises'
+import { categoryJson, isBoolean, toBoolean, updateJson } from 'src/common/utility/function.utils';
+import slugify from 'slugify';
 @Injectable()
 export class CategoryService {
   constructor(
@@ -15,11 +15,12 @@ export class CategoryService {
   ){}
   async create(createCategoryDto: CreateCategoryDto , image : Express.Multer.File[]) {
     let { description , parentId, show, slug, title }= createCategoryDto
+    slug = slugify(slug)
     let destination : string;
     const category = await this.categoryRepository.findOneBy({slug})
     
     if(category) 
-      throw new ConflictException("category already exists")
+      throw new ConflictException("کتگوری از قبل وجود دارد")
     if(image.length > 0){
       const { Location } = await this.s3service.uploadFile(image[0],"Doctors")
       destination = Location
@@ -39,11 +40,11 @@ export class CategoryService {
       title
     })
     categoryJson(slug,title)
-    return {message : "category created"}
+    return {message : "کتگوری ساخته شد"}
   }
 
   async findAll() {
-    return await this.categoryRepository.find({
+    const categories = await this.categoryRepository.find({
       where : {},
       relations : {
         children : true,
@@ -55,31 +56,40 @@ export class CategoryService {
 
       }
     })
+    if(categories.length === 0){
+      throw new NotFoundException("هیج نتیجه ای یافت نشد")
+    }
+    return categories
   }
 
   async findBySlug(slug: string) {
     const category = await this.categoryRepository.findOneBy({slug})
-    if(!category) throw new NotFoundException("category not found")
+    if(!category) throw new NotFoundException("کتگوری مورد نظر یافت نشد")
     return category
   }
   async findById(id: number) {
     const category = await this.categoryRepository.findOneBy({id})
-    if(!category) throw new NotFoundException("category not found")
+    if(!category) throw new NotFoundException("کتگوری مورد نظر یافت نشد")
     return category
   }
   async findByTitle(title: string) {
     const category = await this.categoryRepository.findOneBy({title})
-    if(!category) throw new NotFoundException("category not found")
+    if(!category) throw new NotFoundException("کتگوری مورد نظر یافت نشد")
     return category
   }
 
   async update(id: number, updateCategoryDto: UpdateCategoryDto, image : Express.Multer.File[] = null) {
     let { description, parentId, show, slug, title } = updateCategoryDto
+    slug = slugify(slug)
     let destination : string;
     const updateData: any = {};
-
-    await this.findById(id)
-    if(image){
+    const [slugSearch,category] = await Promise.all([
+      this.categoryRepository.findOneBy({slug}),
+      this.findById(id)
+    ])
+    if(slugSearch)
+      throw new ConflictException("کتگوری از قبل وجود دارد")
+    if(image.length > 0){
       const { Location } = await this.s3service.uploadFile(image[0],"Doctors")
       destination = Location
     }
@@ -95,15 +105,16 @@ export class CategoryService {
     if (destination) updateData.image = destination;
     if (slug) updateData.slug = slug;
     if (title) updateData.title = title;
+    updateJson(category.slug, slug, title)
     await this.categoryRepository.update({id},{
       ...updateData
     })
-    return {message : "category updated"}
+    return {message : "کتگوری مورد نظر اپدیت شد"}
   }
 
   async remove(id: number) {
     await this.findById(id)
     await this.categoryRepository.delete({id})
-    return `category number ${id} deleted successfully`
+    return {message : "کتگوری مورد نظر با موفقیت پاک شد"}
   }
 }

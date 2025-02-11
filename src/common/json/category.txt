@@ -1,1 +1,2 @@
-STRING = "string",
+STRING12= "string",
+ABOZAR =  "abas",

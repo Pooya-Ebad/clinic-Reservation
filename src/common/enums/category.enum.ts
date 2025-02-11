@@ -1,4 +1,5 @@
 export enum categoryEnum {
-STRING = "string",
+STRING12= "string",
+ABOZAR =  "abas",
 
 }

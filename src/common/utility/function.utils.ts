@@ -1,5 +1,5 @@
-import { BadRequestException, ConflictException, InternalServerErrorException } from "@nestjs/common"
-import { appendFile, appendFileSync, existsSync, readFileSync, writeFileSync } from "fs"
+import { BadRequestException } from "@nestjs/common"
+import { appendFileSync, readFileSync, writeFileSync } from "fs"
 import { PaginationDto } from "../dto/pagination.dto"
 
 export function isBoolean(value : any){
@@ -23,6 +23,28 @@ export function categoryJson(slug : string, title : string){
     }
     
 }
+export function updateJson(slug : string, new_slug : string = undefined, new_title : string = undefined){
+    new_title = `"${new_title.trim()}"`
+    console.log(new_title.length, new_title);
+    const categoryItems = readFileSync('./src/common/json/category.txt', 'utf-8')
+    .split(',')
+    .map(value => {
+        let list = value.split("=").map(word => word.replace('\n',''))
+        if(list[0].trim().toLowerCase() === slug){
+            list[0] = new_slug.toUpperCase() || slug.toUpperCase()
+            new_title.length > 2 ? list[1] = new_title : list[1] = list[1] 
+        }
+        return list
+    }) 
+    categoryItems.length -= 1
+    writeFileSync('./src/common/json/category.txt','')
+    for (const element of categoryItems) {
+        appendFileSync('./src/common/json/category.txt',`${element[0]}=${element[1]},\n`,'utf-8')
+    }
+    const newCategoryItems = readFileSync('./src/common/json/category.txt', 'utf-8')
+    writeFileSync('./src/common/enums/category.enum.ts',`export enum categoryEnum {\n${newCategoryItems}\n}`)
+}    
+
 export function checkTime(VisitList : string[], newTime : string, value : number){
     if(!toBoolean(newTime)) return false
     const [hour, min] = newTime.split(':').map(time=> +time)

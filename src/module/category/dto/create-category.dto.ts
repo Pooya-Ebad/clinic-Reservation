@@ -11,6 +11,6 @@ export class CreateCategoryDto {
     description : string
     @ApiProperty()
     show : boolean
-    @ApiPropertyOptional({nullable : true})
+    @ApiPropertyOptional({nullable : true, example : ""})
     parentId : number
 }
