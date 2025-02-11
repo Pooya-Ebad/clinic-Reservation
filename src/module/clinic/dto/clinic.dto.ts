@@ -13,10 +13,10 @@ export class CreateClinicDto {
   @ApiProperty({enum : categoryEnum})
   @IsEnum(categoryEnum)
   category: string;
-  @ApiProperty()
+  @ApiProperty({default : 1})
   @IsNotEmpty({message: "استان نمیتواند خالی  ارسال شود"})
   province: number;
-  @ApiProperty()
+  @ApiProperty({default : 1})
   @IsNotEmpty({message: "شهر نمیتواند خالی  ارسال شود"})
   city: number;
   @ApiProperty()
@@ -27,7 +27,7 @@ export class ClinicDocumentDto {
   license: string;
   @ApiProperty({enum: {"Rental": "rental", "Owner" : "owner"}})
   location_type: string;
-  @ApiProperty({format: "binary"})
+  @ApiPropertyOptional({format: "binary"})
   rent_agreement: string;
   @ApiProperty({format: "binary"})
   clinic_images: string[];

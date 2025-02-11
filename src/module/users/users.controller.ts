@@ -136,7 +136,7 @@ export class UsersController {
     return this.usersService.update(userDto.mobile, updateUserDto);
   }
 
-  @Roles([role.ADMIN])
+  @Roles([role.ADMIN]) 
   @Put("set-appointment")
   @ApiOperation({ summary: "set appointment for user" })
   @ApiResponse({

@@ -92,8 +92,7 @@ export class DoctorsService {
   }
 
   async findDoctors(paginationDto: PaginationDto, searchDto: DoctorSearchDto) {
-    const { search, mobile, status, availability, from_date, to_date } =
-      searchDto;
+    const { search, mobile, status, category, availability, from_date, to_date } = searchDto;
     const { page, limit, skip } = pagination(paginationDto);
     const query = this.doctorRepository.createQueryBuilder("doctors");
 
@@ -102,6 +101,10 @@ export class DoctorsService {
     }
     if (status) {
       query.andWhere("doctors.status = :status", { status });
+    }
+    if (category) {
+      const categoryId = (await this.categoryService.findByTitle(category)).id 
+      query.andWhere("doctors.categoryId = :categoryId", { categoryId });
     }
     if (availability) {
       query.andWhere("doctors.availability = :availability", { availability });

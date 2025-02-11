@@ -5,7 +5,7 @@ import { Repository } from "typeorm";
 import { S3Service } from "../S3/S3.service";
 import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, CreateClinicDto} from "./dto/clinic.dto";
 import { CategoryEntity } from "../category/entities/category.entity";
-import { TokenPayload } from "src/common/types/payload";
+import { ClinicPayload, TokenPayload } from "src/common/types/payload";
 import { isPhoneNumber } from "class-validator";
 import { ClinicDocumentEntity } from "./entity/Document.entity";
 import { getCityAndProvinceNameByCode } from "src/common/utility/address.utils";
@@ -20,7 +20,7 @@ export class clinicService {
     constructor(
         @InjectRepository(ClinicEntity) private clinicRepository : Repository<ClinicEntity>,
         @InjectRepository(CategoryEntity) private categoryRepository : Repository<CategoryEntity>,
-        @InjectRepository(ClinicDocumentEntity) private clinicDocumentEntity : Repository<ClinicDocumentEntity>,
+        @InjectRepository(ClinicDocumentEntity) private clinicDocumentRepository : Repository<ClinicDocumentEntity>,
         @InjectRepository(DoctorEntity) private doctorRepository : Repository<DoctorEntity>,
         private s3Service : S3Service,
         private doctorService : DoctorsService
@@ -29,9 +29,23 @@ export class clinicService {
     let { name,  address, city, province, category }= createClinicDto
     const {provinceName, cityName} = getCityAndProvinceNameByCode(province,city)
     const categoryExists = await this.categoryRepository.findOneBy({title : category})
-    if(!categoryExists) throw new NotFoundException("category not found")
-    const doc = await this.doctorRepository.findOneBy({id : user.id})
-    await this.clinicRepository.insert({
+    if(!categoryExists) throw new NotFoundException("کتگوری یافت نشد")
+    const [doc, clinic] = await Promise.all([
+        this.doctorRepository.findOneBy({id : user.id}),
+        this.clinicRepository.findOneBy({manager_mobile : user.mobile})
+    ])
+    if(clinic){
+        await this.clinicRepository.update({manager_mobile : user.mobile}, {
+            name,
+            slug : slugify(name),
+            categoryId : categoryExists.id,
+            address,
+            city : cityName,
+            province : provinceName
+        })
+        return {message : "اطلاعات اولیه شما بروزرسانی شد"}
+    }
+    const new_clinic = this.clinicRepository.create({
         name,
         slug : slugify(name),
         categoryId : categoryExists.id,
@@ -41,14 +55,20 @@ export class clinicService {
         city : cityName,
         province : provinceName
     })
+    const insertClinic = await this.clinicRepository.save(new_clinic)
+    doc.clinicId = insertClinic.id
+    await this.doctorRepository.save(doc)
     return {message : "اطلاعات اولیه ثبت شد"}
     }
-    async CreateDocument(clinicDocumentDto: ClinicDocumentDto ,files : Express.Multer.File[],mobile : string) {
+    async CreateDocument(clinicDocumentDto: ClinicDocumentDto ,files : Express.Multer.File[], owner : ClinicPayload) {
     let { location_type,tel_1,tel_2 }= clinicDocumentDto
     let fileObject={}
-    
-    const clinic = await this.clinicRepository.findOneBy({manager_mobile : mobile})
+    const [clinic, documentExist] = await Promise.all([
+        this.clinicRepository.findOneBy({id : owner.id}),
+        this.clinicDocumentRepository.findOneBy({clinicId : owner.id}),
+    ])
     if(!clinic) throw new NotFoundException("لطفا مجدد تلاش کنید")
+    if(documentExist) throw new ConflictException("شما قبلا اطلاعات خود را ثبت کرده اید")
     await this.checkTelephone(tel_1)
     await this.checkTelephone(tel_2)
     for(let file of files){
@@ -59,7 +79,7 @@ export class clinicService {
             fileObject[file.fieldname] = (await this.s3Service.uploadFile(file , "clinic")).Location
         }
     }
-    await this.clinicDocumentEntity.insert({
+    const document = this.clinicDocumentRepository.create({
         clinicId : clinic.id,
         location_type,
         tel_1,
@@ -68,8 +88,12 @@ export class clinicService {
         license : fileObject["license"],
         rent_agreement : fileObject["rent_agreement"],
     })
+    const insertDocument = await this.clinicDocumentRepository.save(document)
+    clinic.documentsId = insertDocument.id
+    await this.clinicRepository.save(clinic)
     return {message : "اطلاعات شما دریافت شد و در صف تایید قرار گرفتید"}
     }
+
     async addDoctor(docLicense : string, clinicId : number){
         const doc = await this.doctorService.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :docLicense})
         const clinic = await this.findById(clinicId)
@@ -94,7 +118,7 @@ export class clinicService {
     }
     async checkTelephone(phone: string) {
         if (phone && isPhoneNumber(phone, "IR")) {
-            const existPhone = await this.clinicDocumentEntity.findOneBy([
+            const existPhone = await this.clinicDocumentRepository.findOneBy([
             {tel_1: phone},
             {tel_2: phone},
             ]);

@@ -70,6 +70,9 @@ export function getCityAndProvinceNameByCode(
   provinceId: number,
   cityId: number
 ) {
+
+  provinceId == 0 ? provinceId = 1 : provinceId
+  cityId == 0 ? cityId = 1 : cityId
   let cityName: string, provinceName: string;
   if (provinceId) {
     provinceName = getProvinceNameById(+provinceId);

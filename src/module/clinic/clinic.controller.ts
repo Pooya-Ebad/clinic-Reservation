@@ -1,6 +1,6 @@
 import { Body, Controller,Delete,FileTypeValidator,Get,MaxFileSizeValidator,Param,ParseFilePipe,Patch,Post, Put, Req, UploadedFiles, UseGuards, UseInterceptors} from "@nestjs/common";
 import { clinicService } from "./clinic.service";
-import { ApiBearerAuth, ApiConsumes, ApiProperty, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
 import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, CreateClinicDto, GetAppointmentsDto } from "./dto/clinic.dto";
 import { Request } from "express";
@@ -11,26 +11,44 @@ import { AuthGuard } from "../auth/guard/auth.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
 import { role } from "src/common/enums/role.enum";
 import { ClinicGuard } from "./guard/clinic.guard";
-import { AppointmentStatusEnum } from "src/common/enums/status.enum";
 
 @ApiBearerAuth('Authorization')
-// @UseGuards(AuthGuard)
+@UseGuards(AuthGuard)
 @Controller('clinic')
 @ApiTags('Clinic')
 export class clinicController {
     constructor(private readonly clinicService : clinicService){}
 
-    @Post('register_step1')
+    @Roles([role.DOCTOR])
     @ApiConsumes(SwaggerEnums.UrlEncoded)
+    @Post('register_step1')
+    @ApiOperation({summary : "clinic signup section 1", description : "you need to login as a doctor first"})
+    @ApiResponse({
+        status: 201,
+        description: "if operation was successful",
+        example: {
+            "message": "اطلاعات اولیه ثبت شد"
+        }
+    })
     Register(
-    @Body() createClinicDto: CreateClinicDto,
-    @Req() request : Request
+        @Body() createClinicDto: CreateClinicDto,
+        @Req() request : Request
     ) {
-    return this.clinicService.create(createClinicDto, request.user);
+        return this.clinicService.create(createClinicDto, request.user);
     }
-
-    @Post('register_step2:mobile')
+    
+    @UseGuards(ClinicGuard)
+    @Roles([role.DOCTOR])
     @ApiConsumes(SwaggerEnums.Multipart)
+    @Post('register_step2')
+    @ApiOperation({summary : "clinic signup section 2", description : "you need to login as a doctor first"})
+    @ApiResponse({
+        status: 201,
+        description: "if operation was successful",
+        example: {
+            "message": "اطلاعات شما دریافت شد و در صف تایید قرار گرفتید"
+        }
+    })
     @UseInterceptors(AnyFilesInterceptor({
         storage : memoryStorage()
     }))
@@ -44,10 +62,10 @@ export class clinicController {
             fileIsRequired: false,
         }),
     ) files: Express.Multer.File[],
-    @Param('mobile') mobile : string,
+    @Req() request : Request,
     @Body() clinicDocumentDto: ClinicDocumentDto
     ) {
-    return this.clinicService.CreateDocument(clinicDocumentDto,files,mobile);
+        return this.clinicService.CreateDocument(clinicDocumentDto,files, request.clinic);
     }
     
     @Get(':id')

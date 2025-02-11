@@ -1,5 +1,5 @@
 import { WeekDays } from "src/common/enums/week.days.enum";
-import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { DoctorEntity } from "./doctor.entity";
 
 @Entity('schedule')

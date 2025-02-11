@@ -16,13 +16,14 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @ApiBearerAuth("Authorization")
 @Controller("doctors")
-// @UseGuards(AuthGuard)
+@UseGuards(AuthGuard)
 @ApiTags("Doctors")
 export class DoctorsController {
   constructor(
     private readonly doctorsService: DoctorsService,
     private readonly authService: AuthService
   ) {}
+  
   @ApiConsumes(SwaggerEnums.UrlEncoded)
   @Post("signup-step1")
   @ApiOperation({ summary: "doctors signup section" })

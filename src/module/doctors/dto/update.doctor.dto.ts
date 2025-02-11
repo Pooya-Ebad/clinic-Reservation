@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsMobilePhone, IsOptional, IsString, Length } from 'class-validator';
+import { IsMobilePhone, IsOptional, IsString } from 'class-validator';
 export class UpdateDoctorDto{
     @ApiPropertyOptional({example : "Name"})
     @IsString()
