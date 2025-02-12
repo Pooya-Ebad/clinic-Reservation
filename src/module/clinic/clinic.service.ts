@@ -3,10 +3,10 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { ClinicEntity } from "./entity/clinic.entity";
 import { Repository } from "typeorm";
 import { S3Service } from "../S3/S3.service";
-import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, CreateClinicDto} from "./dto/clinic.dto";
+import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, ClinicSearchDto, CreateClinicDto} from "./dto/clinic.dto";
 import { CategoryEntity } from "../category/entities/category.entity";
 import { ClinicPayload, TokenPayload } from "src/common/types/payload";
-import { isPhoneNumber } from "class-validator";
+import { isDate, isPhoneNumber } from "class-validator";
 import { ClinicDocumentEntity } from "./entity/Document.entity";
 import { getCityAndProvinceNameByCode } from "src/common/utility/address.utils";
 import slugify from "slugify";
@@ -14,6 +14,8 @@ import { DoctorEntity } from "../doctors/entities/doctor.entity";
 import { statusEnum } from "src/common/enums/status.enum";
 import { DoctorsService } from "../doctors/doctors.service";
 import { findOptionsEnum } from "src/common/enums/findOption.enum";
+import { PaginationDto } from "src/common/dto/pagination.dto";
+import { pagination, PaginationGenerator } from "src/common/utility/function.utils";
 
 @Injectable()
 export class clinicService {
@@ -94,6 +96,55 @@ export class clinicService {
     return {message : "اطلاعات شما دریافت شد و در صف تایید قرار گرفتید"}
     }
 
+    async findClinic(paginationDto: PaginationDto, searchDto: ClinicSearchDto) {
+        const { search, status, category, from_date, to_date } = searchDto;
+        const { page, limit, skip } = pagination(paginationDto);
+        const query = this.clinicRepository.createQueryBuilder("clinic");
+    
+        if (status) {
+          query.andWhere("clinic.status = :status", { status });
+        }
+        if (category) {
+          const categoryId = (await this.categoryRepository.findOneBy({title : category})).id 
+          query.andWhere("clinic.categoryId = :categoryId", { categoryId });
+        }
+        if (
+          to_date &&
+          from_date &&
+          isDate(new Date(from_date)) &&
+          isDate(new Date(to_date))
+        ) {
+          let from = new Date(new Date(from_date).setUTCHours(0, 0, 0));
+          let to = new Date(new Date(to_date).setUTCHours(0, 0, 0));
+          query.andWhere("clinic.created_at BETWEEN :from AND :to", { from, to });
+        } else if (from_date && isDate(new Date(from_date))) {
+          let from = new Date(new Date(from_date).setUTCHours(0, 0, 0));
+          query.andWhere("clinic.created_at >= :from", { from });
+        } else if (to_date && isDate(new Date(to_date))) {
+          let to = new Date(new Date(to_date).setUTCHours(0, 0, 0));
+          query.andWhere("clinic.created_at <= :to", { to });
+        }
+        if (search && search.length >= 3) {
+          query.andWhere(
+            "clinic.name LIKE :search OR clinic.manager_name LIKE :search",
+            { search: `%${search}%` }
+          );
+        } else if (search && search.length < 3) {
+          throw new BadRequestException(
+            "تعداد کاراکتر های سرچ نمیتواند کمتر از ۳ کاراکتر باشد."
+          );
+        }
+        query.take(limit);
+        query.skip(skip);
+        query.orderBy("clinic.created_at", "DESC");
+        const [clinic, count] = await query.getManyAndCount();
+        if (clinic.length == 0) throw new NotFoundException("نتیحه ای یافت نشد.");
+        return {
+          pagination: PaginationGenerator(page, limit, count),
+          clinic,
+        };
+    }
+
     async addDoctor(docLicense : string, clinicId : number){
         const doc = await this.doctorService.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :docLicense})
         const clinic = await this.findById(clinicId)
@@ -135,6 +186,7 @@ export class clinicService {
         if(!clinic) throw new NotFoundException("کلینیک یافت نشد")
         return clinic
     }
+    
     async confirmation(id : number ,confirmationDto : ClinicConformationDto){
         const { status, message } = confirmationDto
         if(status === statusEnum.REJECTED && !message){

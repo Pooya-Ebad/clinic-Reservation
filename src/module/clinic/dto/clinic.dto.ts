@@ -2,6 +2,7 @@ import {ApiProperty, ApiPropertyOptional} from "@nestjs/swagger";
 import {
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsPhoneNumber,
 } from "class-validator";
 import { categoryEnum } from "src/common/enums/category.enum";
@@ -51,6 +52,23 @@ export class ClinicDisQualificationDto{
   status : string
   @ApiProperty()
   message : string
+}
+
+export class ClinicSearchDto {
+  @ApiPropertyOptional({ description: "At least 3 characters are required" })
+  search: string;
+  @ApiPropertyOptional({ enum: statusEnum })
+  @IsOptional()
+  @IsEnum(statusEnum)
+  status: string;
+  @ApiPropertyOptional({ enum: categoryEnum })
+  @IsOptional()
+  @IsEnum(categoryEnum)
+  category : string;
+  @ApiPropertyOptional({ description: "in 2025-01-28 18:11:42.000000 format" })
+  to_date: string;
+  @ApiPropertyOptional({ description: "in 2025-01-28 18:11:42.000000 format" })
+  from_date: string;
 }
 export class GetAppointmentsDto{
   @ApiProperty({enum : AppointmentStatusEnum})

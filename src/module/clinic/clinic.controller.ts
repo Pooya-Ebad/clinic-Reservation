@@ -1,8 +1,8 @@
-import { Body, Controller,Delete,FileTypeValidator,Get,MaxFileSizeValidator,Param,ParseFilePipe,Patch,Post, Put, Req, UploadedFiles, UseGuards, UseInterceptors} from "@nestjs/common";
+import { Body, Controller,Delete,FileTypeValidator,Get,MaxFileSizeValidator,Param,ParseFilePipe,Patch,Post, Put, Query, Req, UploadedFiles, UseGuards, UseInterceptors} from "@nestjs/common";
 import { clinicService } from "./clinic.service";
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
-import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, CreateClinicDto, GetAppointmentsDto } from "./dto/clinic.dto";
+import { ClinicConformationDto, ClinicDisQualificationDto, ClinicDocumentDto, ClinicSearchDto, CreateClinicDto, GetAppointmentsDto } from "./dto/clinic.dto";
 import { Request } from "express";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
@@ -11,9 +11,11 @@ import { AuthGuard } from "../auth/guard/auth.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
 import { role } from "src/common/enums/role.enum";
 import { ClinicGuard } from "./guard/clinic.guard";
+import { Pagination } from "src/common/decorators/pagination.decorator";
+import { PaginationDto } from "src/common/dto/pagination.dto";
 
 @ApiBearerAuth('Authorization')
-@UseGuards(AuthGuard)
+// @UseGuards(AuthGuard)
 @Controller('clinic')
 @ApiTags('Clinic')
 export class clinicController {
@@ -67,13 +69,65 @@ export class clinicController {
     ) {
         return this.clinicService.CreateDocument(clinicDocumentDto,files, request.clinic);
     }
-    
-    @Get(':id')
-    @Roles([role.DOCTOR])
-    getClinics(@Param('id') id : string){
-        return this.clinicService.findById(+id)
+    @Roles([role.ADMIN])
+    @Get()
+    @ApiOperation({
+    summary: "search clinics",
+    description: "you can find clinics with following options",
+    })
+    @ApiResponse({
+    status: 200,
+    description: "when clinics found",
+    schema: {
+        example: {
+        pagination: {
+            total_count: 10,
+            page: 0,
+            limit: "10",
+            skip: 0,
+        },
+        doctors: [
+            {
+              "id": 10,
+              "name": "noor",
+              "categoryId": 30,
+              "slug": "noor-clinic",
+              "status": "pending",
+              "manager_name": "Pooya Ebadollahi",
+              "manager_mobile": "09196715197",
+              "reason": null,
+              "statusCheck_at": null,
+              "disQualified_at": null,
+              "province": "آذربایجان شرقی",
+              "city": "اسکو",
+              "address": "string",
+              "doctorsCount": 0,
+              "documentsId": 3,
+              "created_at": "2025-02-11T20:14:01.484Z"
+            }
+          ],
+        },
+    },
+    })
+    @ApiResponse({
+    status: 404,
+    description: "when no result found",
+    schema: {
+        example: {
+        message: "نتیحه ای یافت نشد.",
+        error: "Not Found",
+        statusCode: 404,
+        },
+    },
+    })
+    @Pagination()
+    find(
+    @Query() paginationDto: PaginationDto,
+    @Query() searchDto: ClinicSearchDto
+    ) {
+    return this.clinicService.findClinic(paginationDto, searchDto);
     }
-
+    
     @Get('appointment/:status')
     // @Roles([role.DOCTOR])
     getAppointments(
