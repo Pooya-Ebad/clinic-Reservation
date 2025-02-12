@@ -28,7 +28,7 @@ export class UsersService {
     const { page, limit, skip } = pagination(paginationDto);
     const query = this.userRepository.createQueryBuilder("users");
     if (mobile) {
-      query.where("users.mobile = :mobile", { mobile });
+      query.andWhere("users.mobile = :mobile", { mobile });
     }
     if (
       to_date &&
