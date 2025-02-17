@@ -25,7 +25,6 @@ export function categoryJson(slug : string, title : string){
 }
 export function updateJson(slug : string, new_slug : string = undefined, new_title : string = undefined){
     new_title = `"${new_title.trim()}"`
-    console.log(new_title.length, new_title);
     const categoryItems = readFileSync('./src/common/json/category.txt', 'utf-8')
     .split(',')
     .map(value => {

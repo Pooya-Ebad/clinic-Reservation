@@ -470,7 +470,7 @@ export class DoctorsController {
 
   @Roles([role.ADMIN])
   @Delete("delete/doctor:Medical_license")
-  @ApiOperation({ summary: "delete doctors information's" })
+  @ApiOperation({ summary: "delete doctors information" })
   @ApiResponse({
     status: 200,
     description: "if operation was successful",
