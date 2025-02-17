@@ -151,7 +151,7 @@ export class clinicService {
         if(clinic.status === statusEnum.PENDING || clinic.status === statusEnum.REJECTED){
             throw new UnauthorizedException("کلینیک شما در حال حاضر امکان فعالبت ندارد.")
         }
-        if(doc.clinicId !== 0){
+        if(doc.clinicId !== null){
             throw new ConflictException("این پزشک در یک کلینیک عضو میباشد")
         }else if(doc.category !== clinic.category){
             throw new ConflictException("حوزه کاری این پزشک در حیطه کاری کلینیک نمیباشد")
@@ -164,7 +164,7 @@ export class clinicService {
             this.doctorRepository.save(doc),
             this.clinicRepository.save(clinic)
         ])
-        return {message : `به پزشکان کلینیک اضافه گردید ${doc.first_name} ${doc.last_name} پزشک`}
+        return {message : "پزشک با موفقیت به کلینیک شما اضافه گردید"}
         
     }
     async checkTelephone(phone: string) {
@@ -193,7 +193,7 @@ export class clinicService {
             throw new BadRequestException("برای رد کردن توضیحات نمیتواند خالی باشد.")
         }
         const clinic = await this.findById(id)
-        const doc = await this.doctorService.findOneBy({Find_Option : findOptionsEnum.Medical_License, Value :clinic.manager_mobile})
+        const doc = await this.doctorService.findOneBy({Find_Option : findOptionsEnum.Mobile, Value :clinic.manager_mobile})
         if(status === statusEnum.ACCEPTED){
             doc.clinicId = clinic.id
             clinic.doctorsCount +=1
@@ -243,9 +243,16 @@ export class clinicService {
         }
         const resolvedDocPromises  = await Promise.all(docPromise)
         docPromise = resolvedDocPromises.map(value=>{
-            return value.map(index=>{
+            return value.map(index => {
                 return index.appointments.map(detail=>{
-                    if(detail.status === status){
+                    if(status === "ALL"){
+                        const {user ,id, doctorId,created_at, ...other_detail} = detail
+                        return {
+                            doctor_name : index.first_name + ` ${index.last_name}`,
+                            patient_name : detail.user.first_name + ` ${detail.user.last_name}`,
+                            ...other_detail
+                        }
+                    }else if(detail.status === status){
                         const {user ,id, doctorId,created_at, ...other_detail} = detail
                         return {
                             doctor_name : index.first_name + ` ${index.last_name}`,
@@ -262,10 +269,9 @@ export class clinicService {
                 list_of_appointment.push(available_appointment)
             }
         }
-        
-        return list_of_appointment.length>0
-        ? list_of_appointment 
-        : {message: "هیج نوبت ویزیتی یافت نشد."}
+        if(list_of_appointment.length == 0)
+            throw new NotFoundException("هیج نوبت ویزیتی یافت نشد.")
+        return list_of_appointment 
     }
  
 }

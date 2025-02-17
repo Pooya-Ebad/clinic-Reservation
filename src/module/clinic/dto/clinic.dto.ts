@@ -1,9 +1,12 @@
 import {ApiProperty, ApiPropertyOptional} from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsPhoneNumber,
+  IsString,
+  Length,
 } from "class-validator";
 import { categoryEnum } from "src/common/enums/category.enum";
 import { AppointmentStatusEnum, statusEnum } from "src/common/enums/status.enum";
@@ -71,7 +74,14 @@ export class ClinicSearchDto {
   from_date: string;
 }
 export class GetAppointmentsDto{
-  @ApiProperty({enum : AppointmentStatusEnum})
-  @IsEnum(AppointmentStatusEnum)
+  @ApiPropertyOptional({enum : AppointmentStatusEnum })
+  @IsOptional()
+  @Transform(({ value }) => value === "{status}" ? "ALL" : value)
   status : string
+}
+export class LicenseNumberDto{
+    @ApiProperty({ example: "12345" })
+    @IsString()
+    @Length(5, 5, { message: "کد نظام پزشکی اشتباه است (حداقل و حداکثر ۵ رقم)" })
+    Medical_License_number: string;
 }
