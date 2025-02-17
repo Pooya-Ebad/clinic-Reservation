@@ -138,7 +138,6 @@ export class clinicService {
         query.skip(skip);
         query.orderBy("clinic.created_at", "DESC");
         const [clinic, count] = await query.getManyAndCount();
-        if (clinic.length == 0) throw new NotFoundException("نتیحه ای یافت نشد.");
         return {
           pagination: PaginationGenerator(page, limit, count),
           clinic,

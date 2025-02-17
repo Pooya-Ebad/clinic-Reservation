@@ -38,5 +38,6 @@ import { AppointmentEntity } from "../users/entities/appointment.entity";
     JwtService,
     AuthGuard,
   ],
+  exports : [clinicService]
 })
 export class clinicModule {}

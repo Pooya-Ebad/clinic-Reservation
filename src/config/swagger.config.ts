@@ -7,6 +7,7 @@ export function SwaggerConfig(app : INestApplication) : void{
     .setTitle("Clinic reservation")
     .setDescription("back-end of Clinic reservation")
     .setVersion("0.0.1")
+    .addTag("Search")
     .addTag("Auth")
     .addTag("Users")
     .addTag("Doctors")

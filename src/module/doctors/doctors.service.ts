@@ -139,7 +139,6 @@ export class DoctorsService {
     query.skip(skip);
     query.orderBy("doctors.created_at", "DESC");
     const [doctors, count] = await query.getManyAndCount();
-    if (doctors.length == 0) throw new NotFoundException("نتیحه ای یافت نشد.");
     return {
       pagination: PaginationGenerator(page, limit, count),
       doctors,

@@ -1,4 +1,4 @@
-import { Body, Controller,Delete,FileTypeValidator,Get,MaxFileSizeValidator,Param,ParseFilePipe,Patch,Post, Put, Query, Req, UploadedFiles, UseGuards, UseInterceptors} from "@nestjs/common";
+import { Body, Controller,Delete,FileTypeValidator,Get,MaxFileSizeValidator,NotFoundException,Param,ParseFilePipe,Patch,Post, Put, Query, Req, UploadedFiles, UseGuards, UseInterceptors} from "@nestjs/common";
 import { clinicService } from "./clinic.service";
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
@@ -121,11 +121,13 @@ export class clinicController {
     },
     })
     @Pagination()
-    find(
+    async find(
     @Query() paginationDto: PaginationDto,
     @Query() searchDto: ClinicSearchDto
     ) {
-    return this.clinicService.findClinic(paginationDto, searchDto);
+    const result = await this.clinicService.findClinic(paginationDto, searchDto);
+    if (result.clinic.length == 0) throw new NotFoundException("نتیحه ای یافت نشد.");
+    return result;
     }
     
     @Get('appointment/:status')

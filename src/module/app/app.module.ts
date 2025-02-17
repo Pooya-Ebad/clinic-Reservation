@@ -8,6 +8,7 @@ import { TypeOrmConfig } from 'src/config/typeorm.config';
 import { AuthModule } from '../auth/auth.module';
 import { DoctorsModule } from '../doctors/doctors.module';
 import { clinicModule } from '../clinic/clinic.module';
+import { SearchModule } from '../search/search.module';
 
 @Module({
   imports: [
@@ -23,7 +24,9 @@ import { clinicModule } from '../clinic/clinic.module';
   UsersModule,
   DoctorsModule,
   clinicModule,
-  AuthModule],
+  AuthModule,
+  SearchModule
+],
   controllers: [],
   providers: [],
 })

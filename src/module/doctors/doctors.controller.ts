@@ -218,11 +218,13 @@ export class DoctorsController {
     },
   })
   @Pagination()
-  find(
+  async find(
     @Query() paginationDto: PaginationDto,
     @Query() searchDto: DoctorSearchDto
   ) {
-    return this.doctorsService.findDoctors(paginationDto, searchDto);
+    const result = await this.doctorsService.findDoctors(paginationDto, searchDto);
+    if (result.doctors.length == 0) throw new NotFoundException("نتیحه ای یافت نشد.");
+    return result;
   }
 
   @ApiConsumes(SwaggerEnums.UrlEncoded)

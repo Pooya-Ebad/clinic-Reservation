@@ -16,7 +16,7 @@ import { role } from "src/common/enums/role.enum";
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Roles([role.ADMIN])
+  @Roles([role.ADMIN]) 
   @Get()
   @ApiOperation({
     summary: "search users",
