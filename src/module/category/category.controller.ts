@@ -12,7 +12,7 @@ import { role } from 'src/common/enums/role.enum';
 @Controller('category')
 @ApiBearerAuth("Authorization")
 @ApiTags("Category")
-// @UseGuards(AuthGuard)
+@UseGuards(AuthGuard)
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 

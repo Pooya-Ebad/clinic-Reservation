@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Patch, Post, Put, Req, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { ChargeDto, CheckOtpDto, CreateOtpDto, RefreshTokenDto, SendOtpDto } from "./dto/auth.dto";
+import { ChargeDto, CheckOtpDto, CreateOtpDto, RefreshTokenDto, RoleDto, SendOtpDto } from "./dto/auth.dto";
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
 import { AuthGuard } from "./guard/auth.guard";
@@ -9,6 +9,7 @@ import { Request } from "express";
 import { role } from "src/common/enums/role.enum";
 
 @Controller("auth")
+@UseGuards(AuthGuard)
 @ApiBearerAuth("Authorization")
 @ApiTags("Auth")
 export class AuthController {
@@ -85,7 +86,6 @@ export class AuthController {
     return this.authService.checkOtp(otpDto, "user");
   }
 
-  @UseGuards(AuthGuard)
   @Roles([role.ADMIN])
   @Post("refreshToken")
   @ApiOperation({ summary: "generate new refresh token after expiration" })
@@ -113,7 +113,7 @@ export class AuthController {
     return this.authService.verifyRefreshToken(refreshTokenDto);
   }
 
-  @UseGuards(AuthGuard)
+  @Roles([role.ADMIN, role.DOCTOR, role.USER])
   @Get("profile")
   @ApiOperation({
     summary: "users can get their profile",
@@ -181,7 +181,13 @@ export class AuthController {
     return this.authService.profile(request.user.id, request.user.type);
   }
 
-  @UseGuards(AuthGuard)
+  @Roles([role.ADMIN, role.DOCTOR, role.USER])
+  @Patch("set-admin")
+  setAdmin(@Req() request : Request){
+      return this.authService.setAdmin(request.user)
+  }
+  
+  @Roles([role.USER])
   @Put("charge-wallet")
   @ApiOperation({
     summary: "users can charge their wallet",
@@ -202,11 +208,4 @@ export class AuthController {
       chargeDto
     );
   }
-  // @Roles(["admin"])
-  // @UseGuards(AuthGuard)
-  // @Patch("set-admin")
-  // @ApiConsumes(SwaggerEnums.UrlEncoded)
-  // setAdmin(@Body() role : RoleDto){
-  //     return this.authService.setAdmin(role)
-  // }
 } 

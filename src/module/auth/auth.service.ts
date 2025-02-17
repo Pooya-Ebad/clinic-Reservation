@@ -9,6 +9,7 @@ import { TokenPayload } from "src/common/types/payload";
 import { DoctorEntity } from "../doctors/entities/doctor.entity";
 import { mobileValidation } from "src/common/utility/mobile.utils";
 import { statusEnum } from "src/common/enums/status.enum";
+import { role } from "src/common/enums/role.enum";
 
 @Injectable()
 export class AuthService {
@@ -94,6 +95,7 @@ export class AuthService {
       message: "کد تایید ارسال شد.",
     };
   }
+
   async sendOtp(OtpDto: SendOtpDto) {
     const { mobile } = OtpDto;
     const { phoneNumber } = mobileValidation(mobile);
@@ -142,6 +144,7 @@ export class AuthService {
       message: "کد تایید ارسال شد.",
     };
   }
+
   async checkOtp(otpDto: CheckOtpDto, type: string) {
     const { mobile, code } = otpDto;
     const { phoneNumber } = mobileValidation(mobile);
@@ -194,6 +197,7 @@ export class AuthService {
       message: "با موفقیت وارد اکانت خود شدید.",
     };
   }
+
   TokenGenerator(payload: TokenPayload) {
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.ACCESS_TOKEN_SECRET,
@@ -208,6 +212,7 @@ export class AuthService {
       refreshToken,
     };
   }
+
   async validateAccessToken(token: string) {
     try {
       const payload = this.jwtService.verify<TokenPayload>(token, {
@@ -233,6 +238,7 @@ export class AuthService {
       throw new UnauthorizedException(error);
     }
   }
+
   async checkUserRole(mobile: string, type: string) {
     let role: string;
     if (type === "doctor") {
@@ -249,25 +255,21 @@ export class AuthService {
     if (!role) return new UnauthorizedException("کاربر یافت نشد");
     return role;
   }
-  // async setAdmin(roleData : RoleDto){
-  //     const { role, mobile } = roleData
-  //     const user = await this.userRepository.findOneBy({mobile})
-  //     const doc = await this.docRepository.findOneBy({mobile})
-  //     if(user){
-  //         user.role.push(role)
-  //         await this.userRepository.save(user)
-  //         return {
-  //             message : `user ${user.first_name} ${user.last_name} with mobile : ${user.mobile} is now ${role}`
-  //         }
-  //     }
-  //     if(doc){
-  //         user.role.push(role)
-  //         await this.docRepository.save(doc)
-  //         return {
-  //             message : `user ${doc.first_name} ${doc.last_name} with mobile : ${doc.mobile} is now ${role}`
-  //         }
-  //     }
-  // }
+
+  async setAdmin(payload : TokenPayload){
+      const { id, type } = payload
+      if(type === role.USER){
+        const user = await this.userRepository.findOneBy({id})
+        user.role = role.ADMIN
+        await this.userRepository.save(user)
+      }else{
+        const doc = await this.docRepository.findOneBy({id})
+        doc.role = role.ADMIN 
+        await this.docRepository.save(doc)
+      }
+      return {message : "تغیر کرد admin وضعیت شما به "}
+  }
+
   verifyRefreshToken(refreshToken: RefreshTokenDto) {
     const { RefreshToken } = refreshToken;
     try {
@@ -283,6 +285,7 @@ export class AuthService {
       throw new UnauthorizedException("لطفا وارد اکانت خود شوید.");
     }
   }
+
   async profile(id: number, type: string) {
     let user: UserEntity;
     let doc: DoctorEntity;
@@ -305,6 +308,7 @@ export class AuthService {
     }
     throw new NotFoundException("پروفایل یافت نشد.");
   }
+  
   async chargeWallet(id: number, type: string, chargeDto: ChargeDto) {
     if (type === "doctor")
       throw new UnauthorizedException("این بخش مختص کابران عادی میباشد.");
