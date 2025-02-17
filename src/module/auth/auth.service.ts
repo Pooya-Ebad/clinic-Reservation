@@ -280,9 +280,9 @@ export class AuthService {
         const { type, id, mobile } = verify;
         return this.TokenGenerator({ type, id, mobile });
       }
-      throw new UnauthorizedException("لطفا وارد اکانت خود شوید.");
+      throw new UnauthorizedException("رفرش توکن معبر وارد کنید");
     } catch (error) {
-      throw new UnauthorizedException("لطفا وارد اکانت خود شوید.");
+      throw new UnauthorizedException("رفرش توکن معبر وارد کنید");
     }
   }
 

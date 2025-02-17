@@ -187,7 +187,7 @@ export class AuthController {
       return this.authService.setAdmin(request.user)
   }
   
-  @Roles([role.USER])
+  @Roles([role.USER, role.ADMIN])
   @Put("charge-wallet")
   @ApiOperation({
     summary: "users can charge their wallet",
