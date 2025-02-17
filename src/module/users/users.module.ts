@@ -13,7 +13,6 @@ import { S3Service } from "../S3/S3.service";
 import { CategoryService } from "../category/category.service";
 import { CategoryEntity } from "../category/entities/category.entity";
 import { AppointmentEntity } from "./entities/appointment.entity";
-import { DoctorsModule } from "../doctors/doctors.module";
 
 @Module({
   imports: [

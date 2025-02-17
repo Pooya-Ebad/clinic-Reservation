@@ -4,9 +4,12 @@ import { SecuritySchemeObject } from "@nestjs/swagger/dist/interfaces/open-api-s
 
 export function SwaggerConfig(app : INestApplication) : void{
     const document = new DocumentBuilder()
+    .setVersion('1.0.0')
     .setTitle("Clinic reservation")
-    .setDescription("back-end of Clinic reservation")
-    .setVersion("0.0.1")
+    .setExternalDoc("Git-Hub", "https://github.com/Pooya-Ebad/clinic-Reservation")
+    .setContact("Pooya", "", "pooya7009@gmail.com")
+    .setDescription("Online clinic reservation for patient ")
+    // .setDescription("backend")
     .addTag("Search")
     .addTag("Auth")
     .addTag("Users")

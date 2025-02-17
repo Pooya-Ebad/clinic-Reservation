@@ -1,9 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Request } from "express";
-import { findOptionsEnum } from "src/common/enums/findOption.enum";
 import { role } from "src/common/enums/role.enum";
-import { DoctorsService } from "src/module/doctors/doctors.service";
 import { DoctorEntity } from "src/module/doctors/entities/doctor.entity";
 import { Repository } from "typeorm";
 

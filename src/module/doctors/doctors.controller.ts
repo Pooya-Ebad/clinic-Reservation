@@ -470,7 +470,7 @@ export class DoctorsController {
     return this.doctorsService.update(Medical_license, updateDoctorDto, image);
   }
 
-  @Roles([role.ADMIN])
+  @Roles([role.ADMIN]) 
   @Delete("delete/doctor:Medical_license")
   @ApiOperation({ summary: "delete doctors information" })
   @ApiResponse({

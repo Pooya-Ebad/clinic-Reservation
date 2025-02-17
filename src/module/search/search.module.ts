@@ -3,7 +3,6 @@ import { SearchController } from "./search.controller";
 import { SearchService } from "./search.service";
 import { DoctorsService } from "../doctors/doctors.service";
 import { clinicService } from "../clinic/clinic.service";
-import { TypeOrmConfig } from "src/config/typeorm.config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { DoctorEntity } from "../doctors/entities/doctor.entity";
 import { ClinicEntity } from "../clinic/entity/clinic.entity";
@@ -18,26 +17,26 @@ import { CategoryService } from "../category/category.service";
 import { JwtService } from "@nestjs/jwt";
 
 @Module({
-    imports : [
-        TypeOrmModule.forFeature([
-            ClinicEntity,
-            CategoryEntity,
-            ClinicDocumentEntity,
-            DoctorEntity,
-            UserEntity,
-            ScheduleEntity,
-            AppointmentEntity
-        ])
-    ],
-    controllers : [SearchController],
-    providers : [
-        SearchService,
-        DoctorsService,
-        AuthService,
-        CategoryService,
-        clinicService,
-        S3Service,
-        JwtService
-    ]
+  imports: [
+    TypeOrmModule.forFeature([
+      ClinicEntity,
+      CategoryEntity,
+      ClinicDocumentEntity,
+      DoctorEntity,
+      UserEntity,
+      ScheduleEntity,
+      AppointmentEntity,
+    ]),
+  ],
+  controllers: [SearchController],
+  providers: [
+    SearchService,
+    DoctorsService,
+    AuthService,
+    CategoryService,
+    clinicService,
+    S3Service,
+    JwtService,
+  ],
 })
 export class SearchModule {}
