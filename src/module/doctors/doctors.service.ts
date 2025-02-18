@@ -85,9 +85,9 @@ export class DoctorsService {
       );
     } else throw new UnauthorizedException("پزشک یافت نشد");
     return {
+      message: "اکانت شما با موفقیت ساخنه شد و در صف تایید  قرار گرفت",
       accessTokenValue,
       refreshTokenValue,
-      message: "اکانت شما با موفقیت ساخنه شد و در صف تایید  قرار گرفت",
     };
   }
 

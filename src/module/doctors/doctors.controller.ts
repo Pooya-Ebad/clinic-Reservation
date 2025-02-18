@@ -54,11 +54,11 @@ export class DoctorsController {
     status: 201,
     description: "if the signup was successful",
     example: {
+      message: "اکانت شما با موفقیت ساخنه شد و در صف تایید  قرار گرفت",
       accessTokenValue:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidHlwZSI6ImRvY3RvciIsIm1vYmlsZSI6IjA5MTAwMDAwMDAwIiwiaWF0IjoxNzM4NDA0Njk0LCJleHAiOjE3NDA5OTY2OTR9.2zKqKfyLzDEAimnzGezI0KcPb-iZRmhtWHGwVJpwbrc",
       refreshTokenValue:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidHlwZSI6ImRvY3RvciIsIm1vYmlsZSI6IjA5MTAwMDAwMDAwIiwiaWF0IjoxNzM4NDA0Njk0LCJleHAiOjE3Njk5NjIyOTR9.VYpXkWd_T7lk0wcvpoLtf-X5i3p5QwwvxpNWg9-UNR4",
-      message: "اکانت شما با موفقیت ساخنه شد و در صف تایید  قرار گرفت",
     },
   })
   @ApiResponse({
