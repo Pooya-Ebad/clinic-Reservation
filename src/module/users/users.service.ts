@@ -9,9 +9,10 @@ import { WeekDays } from "src/common/enums/week.days.enum";
 import * as moment from "moment-jalaali";
 import { AppointmentEntity } from "./entities/appointment.entity";
 import { isDate } from "class-validator";
-import { AppointmentStatusEnum } from "src/common/enums/status.enum";
+import { AppointmentStatusEnum, statusEnum } from "src/common/enums/status.enum";
 import { PaginationDto } from "src/common/dto/pagination.dto";
 import { pagination, PaginationGenerator, } from "src/common/utility/function.utils";
+import { findOptionsEnum } from "src/common/enums/findOption.enum";
 
 @Injectable()
 export class UsersService {
@@ -116,11 +117,14 @@ export class UsersService {
     let date: string;
     let day: number;
     const [hour, min] = visit_time.split(":");
-    const [user, schedule, docAppointment] = await Promise.all([
+    const [user, doc, schedule, docAppointment] = await Promise.all([
       this.checkExistUserById(user_id),
+      this.doctorService.findOneBy({Find_Option : findOptionsEnum.Id, Value : `${doctor_id}`}),
       this.doctorService.getSchedule(doctor_id),
       this.doctorService.getAppointment(doctor_id),
     ]);
+    if(doc.status !== statusEnum.ACCEPTED || doc.availability === false)
+      throw new BadRequestException("در حال حاضر دربافت ویزیت با این پزشک امکان پذیر نمیباشد")
     switch (visit_day) {
       case WeekDays.Saturday:
         day = 6;
@@ -169,7 +173,13 @@ export class UsersService {
     if (appointment)
       throw new ConflictException("این نوبت ویزیت قبلا رزو شده است.");
     if (
-      user.appointments.find((appointment) => appointment.Visit_Date === date)
+      user.appointments.find(
+        (appointment) =>
+          (
+            appointment.Visit_Date === date &&
+            appointment.status === AppointmentStatusEnum.reserved) ||
+            appointment.status === AppointmentStatusEnum.pending
+      )
     )
       throw new ConflictException("شما در این زمان نوبت ویزیت دیگری دارید.");
     if (user.wallet < detail.price)

@@ -367,7 +367,7 @@ export class DoctorsController {
 
   @Roles([role.ADMIN])
   @Patch("set-appointment-done:appointment_id")
-  @ApiOperation({summary : "after a successful visit, this API can be used to complete the visit"})
+  @ApiOperation({summary : "after a successful visit, this API can be used to complete the visit", description : "the appointment must be payed and reserved"})
   @ApiResponse({
     status : 200,
     description: "if operation was successful",

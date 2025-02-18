@@ -426,8 +426,8 @@ export class DoctorsService {
     });
     if (!appointment) 
       throw new NotFoundException("ویزیت یافت نشد.");
-    if (appointment.status === AppointmentStatusEnum.done)
-      throw new ConflictException("این ویزیت قبلا انجام شده است.");
+    if (appointment.status !== AppointmentStatusEnum.reserved || appointment.payment === false)
+      throw new ConflictException("امکان انجام این ویزیت وجود ندارد");
     appointment.status = AppointmentStatusEnum.done;
     await this.appointmentRepository.save(appointment);
     return { message: "ویزیت با موفقیت انجام شد." };
