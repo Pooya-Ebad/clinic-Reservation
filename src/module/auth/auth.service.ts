@@ -10,6 +10,7 @@ import { DoctorEntity } from "../doctors/entities/doctor.entity";
 import { mobileValidation } from "src/common/utility/mobile.utils";
 import { statusEnum } from "src/common/enums/status.enum";
 import { role } from "src/common/enums/role.enum";
+import { Request } from "express";
 
 @Injectable()
 export class AuthService {
@@ -96,48 +97,57 @@ export class AuthService {
     };
   }
 
-  async sendOtp(OtpDto: SendOtpDto) {
+  async sendOtp(OtpDto: SendOtpDto, type: string) {
     const { mobile } = OtpDto;
     const { phoneNumber } = mobileValidation(mobile);
     const { code, expiration } = this.createOtp();
     const date = new Date().getTime();
-    let user = await this.userRepository.findOneBy({ mobile: phoneNumber });
-    if (user) {
-      if (user?.expires_in > new Date(date)) {
-        const remain = new Date(user.expires_in.getTime() - date);
-        let [remainMin, remainSec] = [
-          remain.getUTCMinutes(),
-          remain.getUTCSeconds(),
-        ];
-        const remainTime = `0${remainMin}:${remainSec < 10 ? `0${remainSec}` : remainSec}`;
-        throw new ConflictException({
-          message: "کد تایید منقضی نشده است.",
-          remain_time: remainTime,
-        });
+    let exist = false;
+    if (type === role.USER) {
+      let user = await this.userRepository.findOneBy({ mobile: phoneNumber });
+      if(user){
+        exist = true;
+        if (user?.expires_in > new Date(date)) {
+          const remain = new Date(user.expires_in.getTime() - date);
+          let [remainMin, remainSec] = [
+            remain.getUTCMinutes(),
+            remain.getUTCSeconds(),
+          ];
+          const remainTime = `0${remainMin}:${remainSec < 10 ? `0${remainSec}` : remainSec}`;
+          throw new ConflictException({
+            message: "کد تایید منقضی نشده است.",
+            remain_time: remainTime,
+          });
+        }
+        user.otp = code;
+        user.expires_in = expiration;
+        await this.userRepository.save(user);
       }
-      user.otp = code;
-      user.expires_in = expiration;
-      await this.userRepository.save(user);
     }
-    let doc = await this.docRepository.findOneBy({ mobile: phoneNumber });
-    if (doc) {
-      if (doc?.expires_in > new Date(date)) {
-        const remain = new Date(doc.expires_in.getTime() - date);
-        let [remainMin, remainSec] = [
-          remain.getUTCMinutes(),
-          remain.getUTCSeconds(),
-        ];
-        const remainTime = `0${remainMin}:${remainSec < 10 ? `0${remainSec}` : remainSec}`;
-        throw new ConflictException({
-          message: "کد تایید منقضی نشده است.",
-          remain_time: remainTime,
-        });
+    else if(type === role.DOCTOR) {
+      let doc = await this.docRepository.findOneBy({ mobile: phoneNumber });
+      if(doc){
+        exist = true;
+        if(!doc.Medical_License_number || !doc.image || !doc.national_code)
+          throw new UnauthorizedException("شما ثبت نام خود را تکمیل نکرده اید")
+        if (doc?.expires_in > new Date(date)) {
+          const remain = new Date(doc.expires_in.getTime() - date);
+          let [remainMin, remainSec] = [
+            remain.getUTCMinutes(),
+            remain.getUTCSeconds(),
+          ];
+          const remainTime = `0${remainMin}:${remainSec < 10 ? `0${remainSec}` : remainSec}`;
+          throw new ConflictException({
+            message: "کد تایید منقضی نشده است.",
+            remain_time: remainTime,
+          });
+        }
+        doc.otp = code;
+        doc.expires_in = expiration;
+        await this.docRepository.save(doc);
       }
-      doc.otp = code;
-      doc.expires_in = expiration;
-      await this.docRepository.save(doc);
     }
-    if (!user && !doc) {
+    if (!exist) {
       throw new NotFoundException("کاربر یافت نشد");
     }
     return {
@@ -239,21 +249,21 @@ export class AuthService {
     }
   }
 
-  async checkUserRole(mobile: string, type: string) {
-    let role: string;
+  async checkUserRole(request : Request) {
+    const { type, mobile } = request.user
+    let Role: string;
     if (type === "doctor") {
       const doc = await this.docRepository.findOneBy({ mobile });
-      if (doc.status == statusEnum.PENDING || doc.status == statusEnum.REJECTED)
-        throw new UnauthorizedException(
-          "حساب شما اجازه دسترسی به این بخش را ندارد"
-        );
-      role = doc.role;
+      if(request.url === "/auth/set-admin" || doc.role === role.ADMIN) Role = doc.role;
+      else if(doc.status == statusEnum.PENDING || doc.status == statusEnum.REJECTED)
+        throw new UnauthorizedException("حساب شما اجازه دسترسی به این بخش را ندارد (رد صلاحیت/تایید نشده)");
+      else Role = doc.role;
     } else {
       const user = await this.userRepository.findOneBy({ mobile });
-      role = user.role;
+      Role = user.role;
     }
-    if (!role) return new UnauthorizedException("کاربر یافت نشد");
-    return role;
+    if (!Role) return new UnauthorizedException("کاربر یافت نشد");
+    return Role;
   }
 
   async setAdmin(payload : TokenPayload){

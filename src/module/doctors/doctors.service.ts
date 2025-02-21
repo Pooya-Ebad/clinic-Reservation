@@ -3,7 +3,7 @@ import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformation
 import { UpdateDoctorDto } from './dto/update.doctor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DoctorEntity } from './entities/doctor.entity';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsWhere, FindOptionsWhereProperty, Repository } from 'typeorm';
 import { S3Service } from '../S3/S3.service';
 import { role } from 'src/common/enums/role.enum';
 import { AuthService } from '../auth/auth.service';
@@ -162,7 +162,7 @@ export class DoctorsService {
   async update(
     medical_license: string,
     updateDoctorDto: UpdateDoctorDto,
-    image: Express.Multer.File
+    image: Express.Multer.File[]
   ) {
     const { mobile } = updateDoctorDto;
     let updateData: any = {};
@@ -175,7 +175,7 @@ export class DoctorsService {
         updateData[data] = updateDoctorDto[data];
       }
     }
-    if (image) {
+    if (image.length > 0) {
       const { Location } = await this.s3Service.uploadFile(image[0], "Doctors");
       updateData.image = Location;
     }
@@ -330,16 +330,19 @@ export class DoctorsService {
     return schedule;
   }
 
-  async getAppointment(id: number) {
+  async getAppointment(id: number, value : string = null) {
+    let where : FindOptionsWhereProperty<DoctorEntity> = {}
+    where["id"] = id
+    if(value)
+      where["appointments"] = {"status" : value["status"]}
     let doctor = await this.doctorRepository.findOne({
-      where: { id },
+      where,
       select: ["appointments", "id"],
       relations: { appointments: true },
     });
-    if (!doctor) throw new UnauthorizedException("پزشک یافت نشد.");
+    if (!doctor) throw new UnauthorizedException("پزشک و یا ویزیت مورد نظر یافت نشد.");
     return doctor.appointments;
   }
-
   async updateSchedule(docId: number, updateSchedule: UpdateScheduleDto) {
     let { Day, Visit_Time, New_Visit_Time, New_Price } = updateSchedule;
     if (New_Price && +New_Price < 30000)
@@ -357,18 +360,15 @@ export class DoctorsService {
     if (!schedule || !visitList?.includes(Visit_Time))
       throw new NotFoundException("زمانبندی مورد نظر یافت نشد.");
 
-    visitList.length = visitList.length - 1;
-
     if (visitList.includes(New_Visit_Time))
       throw new ConflictException("قبلا این تایم را ست کرده اید.");
     checkTime(
-      visitList.filter((value) => value != Visit_Time),
+      visitList,
       New_Visit_Time,
       10
     );
     let times = "";
     let visit_price = "";
-
     docSchedule = docSchedule.map((schedule) => {
       if (schedule.day === Day) {
         schedule.details.map((detail) => {
@@ -381,11 +381,10 @@ export class DoctorsService {
         return schedule;
       }
     });
-    docSchedule.shift();
     for (let i = 0; i < docSchedule.length; i++) {
-      for (let j = 0; j < docSchedule[i].details.length; j++) {
-        times += `${docSchedule[i].details[j].visitTime},`;
-        visit_price += `${docSchedule[i].details[j].price},`;
+      for (let j = 0; j < docSchedule[i]?.details?.length; j++) {
+        times += `${docSchedule[i]?.details[j]?.visitTime},`;
+        visit_price += `${docSchedule[i]?.details[j]?.price},`;
       }
     }
     schedule.visitTime = times;

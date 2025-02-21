@@ -1,1 +1,2 @@
 CARDIOLOGY = "قلب و عروق",
+STRING = "string",

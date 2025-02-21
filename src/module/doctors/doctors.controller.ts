@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, Par
 import { DoctorsService } from './doctors.service';
 import { AvailabilityDto, CreateDoctorDto, DeleteScheduleDto, DoctorConformationDto, DoctorSearchDto, ScheduleDto, UpdateScheduleDto } from './dto/doctor.dto';
 import { UpdateDoctorDto } from './dto/update.doctor.dto';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UploadFileS3 } from 'src/common/interceptors/upload-file.interceptor';
 import { toMG } from 'src/common/utility/function.utils';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -13,6 +13,7 @@ import { AuthGuard } from '../auth/guard/auth.guard';
 import { role } from 'src/common/enums/role.enum';
 import { Pagination } from 'src/common/decorators/pagination.decorator';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { AppointmentStatusEnum, statusEnum } from 'src/common/enums/status.enum';
 
 @ApiBearerAuth("Authorization")
 @Controller("doctors")
@@ -70,6 +71,10 @@ export class DoctorsController {
       statusCode: 401,
     },
   })
+  @ApiParam({
+    name : "mobile",
+    example : "09100000000"
+  })
   @UseInterceptors(UploadFileS3("image"))
   create(
     @UploadedFiles(
@@ -107,7 +112,7 @@ export class DoctorsController {
     },
   })
   login(@Body() otpDto: SendOtpDto) {
-    return this.authService.sendOtp(otpDto);
+    return this.authService.sendOtp(otpDto, role.DOCTOR);
   }
 
   @ApiConsumes(SwaggerEnums.UrlEncoded)
@@ -291,8 +296,16 @@ export class DoctorsController {
       statusCode: 404,
     },
   })
-  async getAppointment(@Param("docId") docId: string) {
-    const appointment = await this.doctorsService.getAppointment(+docId);
+  @ApiQuery({
+    name : "status",
+    enum: AppointmentStatusEnum,
+    required: false,
+  })
+  async getAppointment(
+    @Param("docId") docId: string,
+    @Query() status : string
+  ) {
+    const appointment = await this.doctorsService.getAppointment(+docId, status);
     if (appointment.length === 0)
       throw new NotFoundException("هیج نوبت ویزیتی برای پزشک یافت نشد");
     return appointment;
@@ -462,7 +475,7 @@ export class DoctorsController {
         fileIsRequired: false,
       })
     )
-    image: Express.Multer.File,
+    image: Express.Multer.File[],
     @Body() updateDoctorDto: UpdateDoctorDto,
     @Param("Medical_license") Medical_license: string
   ) {
@@ -505,7 +518,7 @@ export class DoctorsController {
     status: 200,
     description: "if operation was successful",
     example: {
-      message: "زمانبدی مورد نظر با مفقیت پاک شد.",
+      message: "زمانبدی مورد نظر با موفقیت پاک شد.",
     },
   })
   @ApiResponse({

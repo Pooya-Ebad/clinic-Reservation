@@ -56,7 +56,7 @@ export class AuthController {
     },
   })
   login(@Body() otpDto: SendOtpDto) {
-    return this.authService.sendOtp(otpDto);
+    return this.authService.sendOtp(otpDto, role.USER);
   }
 
   @Post("check-otp")
