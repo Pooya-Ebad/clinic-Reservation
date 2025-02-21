@@ -8,7 +8,7 @@ export function SwaggerConfig(app : INestApplication) : void{
     .setTitle("Clinic reservation")
     .setExternalDoc("Git-Hub", "https://github.com/Pooya-Ebad/clinic-Reservation")
     .setContact("Pooya", "", "pooya7009@gmail.com")
-    .setDescription("Online clinic reservation for patients \n To access most sections, change your status to admin after logging in throw the Auth section."
+    .setDescription("Online clinic reservation for patients. To access most sections, change your status to admin after logging in throw the Auth section."
         )
     .addTag("Search")
     .addTag("Auth")
