@@ -37,7 +37,6 @@ export class SearchService {
         city: value.city,
       };
     });
-    console.log(clinic);
     const { doctors, pagination: doctorsPagination } =
       await this.doctorsService.findDoctors(paginationDto, {
         search,

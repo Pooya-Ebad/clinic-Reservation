@@ -479,7 +479,6 @@ export class DoctorsController {
     @Body() updateDoctorDto: UpdateDoctorDto,
     @Param("Medical_license") Medical_license: string
   ) {
-    console.log(image);
     return this.doctorsService.update(Medical_license, updateDoctorDto, image);
   }
 
