@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Patch, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Patch, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { ChargeDto, CheckOtpDto, CreateOtpDto, RefreshTokenDto, RoleDto, SendOtpDto } from "./dto/auth.dto";
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SwaggerEnums } from "src/common/enums/swagger.enum";
 import { AuthGuard } from "./guard/auth.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
@@ -182,9 +182,16 @@ export class AuthController {
   }
 
   @Roles([role.ADMIN, role.DOCTOR, role.USER])
-  @Patch("set-admin")
-  setAdmin(@Req() request : Request){
-      return this.authService.setAdmin(request.user)
+  @Patch("change-role")
+  @ApiQuery({
+    name: "Role",
+    enum : role
+   })
+  setAdmin(
+    @Req() request : Request,
+    @Query() Role : string
+  ){
+      return this.authService.setAdmin(request.user, Role)
   }
   
   @Roles([role.USER, role.ADMIN])

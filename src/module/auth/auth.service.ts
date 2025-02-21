@@ -254,7 +254,7 @@ export class AuthService {
     let Role: string;
     if (type === "doctor") {
       const doc = await this.docRepository.findOneBy({ mobile });
-      if(request.url === "/auth/set-admin" || doc.role === role.ADMIN) Role = doc.role;
+      if(request.url === "/auth/change-role" || doc.role === role.ADMIN) Role = doc.role;
       else if(doc.status == statusEnum.PENDING || doc.status == statusEnum.REJECTED)
         throw new UnauthorizedException("حساب شما اجازه دسترسی به این بخش را ندارد (رد صلاحیت/تایید نشده)");
       else Role = doc.role;
@@ -266,18 +266,19 @@ export class AuthService {
     return Role;
   }
 
-  async setAdmin(payload : TokenPayload){
-      const { id, type } = payload
-      if(type === role.USER){
-        const user = await this.userRepository.findOneBy({id})
-        user.role = role.ADMIN
-        await this.userRepository.save(user)
-      }else{
-        const doc = await this.docRepository.findOneBy({id})
-        doc.role = role.ADMIN 
-        await this.docRepository.save(doc)
-      }
-      return {message : "تغیر کرد admin وضعیت شما به "}
+  async setAdmin(payload : TokenPayload, value : string){
+    const role = value["Role"]
+    const { id, type } = payload
+    if(type === role.USER){
+      const user = await this.userRepository.findOneBy({id})
+      user.role = role
+      await this.userRepository.save(user)
+    }else{
+      const doc = await this.docRepository.findOneBy({id})
+      doc.role = role
+      await this.docRepository.save(doc)
+    }
+    return {message : `تغیر کرد ${role} وضعیت شما به `}
   }
 
   verifyRefreshToken(refreshToken: RefreshTokenDto) {
