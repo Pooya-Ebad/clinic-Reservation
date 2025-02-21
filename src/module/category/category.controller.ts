@@ -3,7 +3,7 @@ import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UploadFileS3 } from 'src/common/interceptors/upload-file.interceptor';
-import { ApiBearerAuth, ApiConsumes, ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { toMG } from 'src/common/utility/function.utils';
 import { AuthGuard } from '../auth/guard/auth.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -68,8 +68,16 @@ export class CategoryController {
       "description": "string",
       "show": true,
       "parentId": null,
-      "children": [],
-      "parent": null
+      "children": [
+      {
+        "id": 4,
+        "slug": "biology"
+      }
+     ],
+      "parent": {
+      "id": 2,
+      "slug": "genetic"
+    }
     }
   ]
   })
@@ -101,6 +109,13 @@ export class CategoryController {
       "description": "string",
       "show": true,
       "parentId": null,
+      "children": [
+      {
+        "id": 4,
+        "slug": "biology"
+      },
+    ],
+    "parent" : null
     }
   ]
   })
@@ -119,7 +134,7 @@ export class CategoryController {
 
   @Roles([role.ADMIN])
   @ApiConsumes("multipart/form-data")
-  @Patch(':category_id')
+  @Patch('update:category_id')
   @ApiOperation({summary : "update category information"})
   @ApiResponse({
     status : 200,

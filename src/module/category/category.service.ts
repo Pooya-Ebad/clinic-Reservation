@@ -51,9 +51,8 @@ export class CategoryService {
         parent : true
       },
       select : {
-        children : { slug :true },
-        parent : { slug :true },
-
+        children : { id : true, slug :true },
+        parent : { id : true, slug :true },
       }
     })
     if(categories.length === 0){
@@ -68,7 +67,17 @@ export class CategoryService {
     return category
   }
   async findById(id: number) {
-    const category = await this.categoryRepository.findOneBy({id})
+    const category = await this.categoryRepository.findOne({
+      where :  { id },
+      relations : {
+        children : true,
+        parent : true
+      },
+      select : {
+        children : { id : true, slug :true },
+        parent : { id : true, slug :true },
+      }
+    })
     if(!category) throw new NotFoundException("کتگوری مورد نظر یافت نشد")
     return category
   }
