@@ -245,7 +245,7 @@ export class clinicController {
 
   @Roles([role.ADMIN])
   @ApiConsumes(SwaggerEnums.UrlEncoded)
-  @Patch("DisQualification:id")
+  @Patch("DisQualification:clinicId")
   @ApiOperation({ summary: "you can disqualification clinics" })
   @ApiResponse({
     status: 200,
@@ -264,7 +264,7 @@ export class clinicController {
     },
   })
   DisQualification(
-    @Param("id") id: string,
+    @Param("clinicId") id: string,
     @Body() disQualification: ClinicDisQualificationDto
   ) {
     return this.clinicService.DisQualification(+id, disQualification);
