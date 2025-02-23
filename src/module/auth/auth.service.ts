@@ -23,7 +23,7 @@ export class AuthService {
   ) {}
   private createOtp() {
     let code = randomInt(10000, 99999).toString();
-    let expiration = new Date(new Date().getTime() + 1000 * 60 * 2);
+    let expiration = new Date(new Date().getTime() + 1000 * 60 * 1);
     return { code, expiration };
   }
   async signup(OtpDto: CreateOtpDto, type: string) {
