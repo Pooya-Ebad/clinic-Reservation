@@ -9,6 +9,8 @@ import { AuthModule } from '../auth/auth.module';
 import { DoctorsModule } from '../doctors/doctors.module';
 import { clinicModule } from '../clinic/clinic.module';
 import { SearchModule } from '../search/search.module';
+import { MorganInterceptor, MorganModule } from 'nest-morgan';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -25,10 +27,16 @@ import { SearchModule } from '../search/search.module';
   DoctorsModule,
   clinicModule,
   AuthModule,
-  SearchModule
+  SearchModule,
+  MorganModule
 ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide : APP_INTERCEPTOR,
+      useClass : MorganInterceptor("dev")
+    }
+  ],
 })
 export class AppModule {}
  
